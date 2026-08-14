@@ -1,0 +1,17 @@
+{
+  "name": "mentor-apprentice",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run start:dev -w api",
+    "build": "npm run build -w api && npm run build -w web",
+    "build:web": "npm run build -w web",
+    "build:api": "npm run build -w api",
+    "lint": "npm run lint -w web && npm run lint -w api",
+    "test": "npm run test -w api"
+  }
+}
