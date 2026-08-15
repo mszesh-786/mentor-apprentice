@@ -1,0 +1,24 @@
+# CD placeholder — enable after choosing a host (Railway / Fly / Render / Vercel).
+# This workflow does not deploy yet; it only documents the intended gate.
+
+name: CD
+
+on:
+  workflow_dispatch:
+  # Uncomment when hosting is configured:
+  # push:
+  #   branches: [main]
+
+jobs:
+  deploy-placeholder:
+    name: Deploy (not configured)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain
+        run: |
+          echo "CI is active via .github/workflows/ci.yml"
+          echo "CD needs a deploy target. Pick one, then replace this job with:"
+          echo "  - API: migrate deploy + container/service release"
+          echo "  - Web: static build to CDN/host"
+          echo "Required secrets depend on the host (token, project id, DATABASE_URL)."
+          exit 0

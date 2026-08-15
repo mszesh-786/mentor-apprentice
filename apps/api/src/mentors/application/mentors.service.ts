@@ -91,10 +91,7 @@ export class MentorsService {
     }
   }
 
-  private assertCurrencyWithRate(
-    hourlyRate?: number,
-    currency?: string,
-  ): void {
+  private assertCurrencyWithRate(hourlyRate?: number, currency?: string): void {
     if (hourlyRate !== undefined && currency === undefined) {
       throw new BadRequestException(
         'currency is required when hourlyRate is set',

@@ -57,10 +57,7 @@ export class UsersRepository {
     return this.toRecord(user);
   }
 
-  async updateDisplayName(
-    userId: string,
-    displayName: string,
-  ): Promise<void> {
+  async updateDisplayName(userId: string, displayName: string): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
       data: { displayName },

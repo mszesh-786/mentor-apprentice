@@ -54,5 +54,15 @@ Authenticated mentor JWT (HS256 stub):
 | `npm run dev:web` | Vite dev server |
 | `npm run dev:api` | NestJS watch mode |
 | `npm run build` | Build API + web |
+| `npm run lint:check` | Lint without autofix |
 | `npm run test -w api` | API unit tests |
 | `npm run test:e2e -w api` | API e2e (needs Postgres) |
+
+## CI / CD
+
+GitHub Actions:
+
+- **CI** (`.github/workflows/ci.yml`) — on PR/push: API lint + unit + e2e (Postgres service) + build; web lint + build
+- **CD** (`.github/workflows/cd.yml`) — placeholder until deploy host chosen
+
+After pushing to GitHub, open the Actions tab to see CI runs.

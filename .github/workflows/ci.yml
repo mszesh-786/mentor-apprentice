@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API (lint, unit, e2e, build)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mentor
+          POSTGRES_PASSWORD: mentor
+          POSTGRES_DB: mentor_apprentice
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mentor -d mentor_apprentice"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://mentor:mentor@localhost:5432/mentor_apprentice?schema=public
+      JWT_SECRET: ci-jwt-secret
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Lint API
+        run: npm run lint:check -w api
+
+      - name: Unit tests
+        run: npm run test -w api
+
+      - name: Apply migrations
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: E2E tests
+        run: npm run test:e2e -w api
+
+      - name: Build API
+        run: npm run build -w api
+
+  web:
+    name: Web (lint, build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint web
+        run: npm run lint -w web
+
+      - name: Build web
+        run: npm run build -w web

@@ -99,15 +99,21 @@ describe('MentorsController (e2e)', () => {
       hourlyRate: '45.00',
       currency: 'EUR',
     });
-    expect(createRes.body.id).toBeDefined();
-    expect(createRes.body.userId).toBeDefined();
+    const created = createRes.body as {
+      id: string;
+      userId: string;
+      headline: string;
+    };
+    expect(created.id).toBeDefined();
+    expect(created.userId).toBeDefined();
 
     const getRes = await request(app.getHttpServer())
       .get('/mentors/me')
       .set(authHeader())
       .expect(200);
 
-    expect(getRes.body.id).toBe(createRes.body.id);
+    const fetched = getRes.body as { id: string };
+    expect(fetched.id).toBe(created.id);
 
     const patchRes = await request(app.getHttpServer())
       .patch('/mentors/me')
@@ -115,7 +121,8 @@ describe('MentorsController (e2e)', () => {
       .send({ headline: 'Senior automotive mentor' })
       .expect(200);
 
-    expect(patchRes.body.headline).toBe('Senior automotive mentor');
+    const patched = patchRes.body as { headline: string };
+    expect(patched.headline).toBe('Senior automotive mentor');
   });
 
   it('returns 409 when profile already exists', async () => {
