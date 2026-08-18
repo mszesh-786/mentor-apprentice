@@ -59,6 +59,10 @@ jobs:
         working-directory: apps/api
         run: npx prisma migrate deploy
 
+      - name: Seed languages
+        working-directory: apps/api
+        run: npm run prisma:seed
+
       - name: E2E tests
         run: npm run test:e2e -w api
 

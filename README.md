@@ -44,8 +44,10 @@ Authenticated mentor JWT (HS256 stub):
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/mentors/profile` | Create DRAFT profile |
-| GET | `/mentors/me` | Read own profile |
+| GET | `/mentors/me` | Read own profile (includes languages) |
 | PATCH | `/mentors/me` | Update own profile |
+| PUT | `/mentors/me/languages` | Replace mentor languages |
+| GET | `/languages` | List active language catalogue |
 
 ## Scripts
 

@@ -1,26 +1,23 @@
-import {BadRequestException, Injectable} from '@nestjs/common';
-import {LanguagesRepository} from '../persistence/languages.repository';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { LanguagesRepository } from '../persistence/languages.repository';
 import { Language } from '../domain/language';
-import { LanguageResponseDto } from '../dto/language-response.dto';
-import { toLanguageResponse } from '../mappers/language.mapper';
-
-
 
 @Injectable()
-export class LanguageService {
-    constructor(private readonly lanaugesRepository: LanguagesRepository) {}
+export class LanguagesService {
+  constructor(private readonly languagesRepository: LanguagesRepository) {}
 
+  async listActive(): Promise<Language[]> {
+    return this.languagesRepository.findActive();
+  }
 
-async listActive(): Promise<LanguageResponseDto[]> {
-    const languages = await this.lanaugesRepository.findActive();
-    return languages.map(toLanguageResponse);
-}
+  async assertActiveIds(languageIds: string[]): Promise<Language[]> {
+    const uniqueIds = [...new Set(languageIds)];
+    const languages = await this.languagesRepository.findActiveByIds(uniqueIds);
 
-async assertActiveIds(languageIds: string[]): Promise<Language[]> {
-    const languages = await this.lanaugesRepository.findActiveByIds(languageIds);
-    if (languages.length !== languageIds.length) {
-        throw new BadRequestException('Some languages are not active');
+    if (languages.length !== uniqueIds.length) {
+      throw new BadRequestException('One or more language ids are invalid');
     }
+
     return languages;
-}
+  }
 }

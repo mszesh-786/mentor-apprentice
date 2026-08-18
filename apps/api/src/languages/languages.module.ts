@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import {LanguagesController} from './languages.controller';
-import {LanguageService} from './application/languages.service';
-import {LanguagesRepository} from './persistence/languages.repository';import {PrismaService} from '../database/prisma.service';
+import { LanguagesService } from './application/languages.service';
+import { LanguagesController } from './languages.controller';
+import { LanguagesRepository } from './persistence/languages.repository';
 
 @Module({
-    controllers: [LanguagesController],
-    providers: [LanguageService, LanguagesRepository],
-    exports: [LanguageService],
+  controllers: [LanguagesController],
+  providers: [LanguagesService, LanguagesRepository],
+  exports: [LanguagesService],
 })
 export class LanguagesModule {}

@@ -1,4 +1,5 @@
 import { PublicationStatus } from '@prisma/client';
+import { LanguageResponseDto } from '../../languages/dto/language-response.dto';
 
 export class MentorProfileResponseDto {
   id!: string;
@@ -11,6 +12,7 @@ export class MentorProfileResponseDto {
   hourlyRate!: string | null;
   currency!: string | null;
   publicationStatus!: PublicationStatus;
+  languages!: LanguageResponseDto[];
   createdAt!: string;
   updatedAt!: string;
 }

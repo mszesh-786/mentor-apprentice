@@ -6,6 +6,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from '../../common/errors/domain-error';
+import { LanguagesService } from '../../languages/application/languages.service';
 import { UsersService } from '../../users/users.service';
 import { CreateMentorProfileDto } from '../dto/create-mentor-profile.dto';
 import { UpdateMentorProfileDto } from '../dto/update-mentor-profile.dto';
@@ -17,6 +18,7 @@ export class MentorsService {
   constructor(
     private readonly mentorsRepository: MentorsRepository,
     private readonly usersService: UsersService,
+    private readonly languagesService: LanguagesService,
   ) {}
 
   async createProfile(
@@ -83,6 +85,32 @@ export class MentorsService {
       hourlyRate: dto.hourlyRate,
       currency: dto.currency,
     });
+  }
+
+  async setMyLanguages(
+    user: AuthUser,
+    languageIds: string[],
+  ): Promise<MentorProfile> {
+    this.assertActive(user);
+
+    const profile = await this.mentorsRepository.findByUserId(user.id);
+    if (!profile) {
+      throw new NotFoundError('Mentor profile not found');
+    }
+
+    const uniqueIds = [...new Set(languageIds)];
+    if (uniqueIds.length > 0) {
+      await this.languagesService.assertActiveIds(uniqueIds);
+    }
+
+    await this.mentorsRepository.replaceLanguages(profile.id, uniqueIds);
+
+    const updated = await this.mentorsRepository.findByUserId(user.id);
+    if (!updated) {
+      throw new NotFoundError('Mentor profile not found');
+    }
+
+    return updated;
   }
 
   private assertActive(user: AuthUser): void {

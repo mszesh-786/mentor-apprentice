@@ -1,6 +1,6 @@
 export type Language = {
-    id: string;
-    code: string;
-    name: string;
-    sortOrder: number;
-}
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+};

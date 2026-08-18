@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -17,6 +18,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { MentorsService } from './application/mentors.service';
 import { CreateMentorProfileDto } from './dto/create-mentor-profile.dto';
 import { MentorProfileResponseDto } from './dto/mentor-profile-response.dto';
+import { SetMentorLanguagesDto } from './dto/set-mentor-languages.dto';
 import { UpdateMentorProfileDto } from './dto/update-mentor-profile.dto';
 import { toMentorProfileResponse } from './mappers/mentor-profile.mapper';
 
@@ -50,6 +52,18 @@ export class MentorsController {
     @Body() dto: UpdateMentorProfileDto,
   ): Promise<MentorProfileResponseDto> {
     const profile = await this.mentorsService.updateMyProfile(user, dto);
+    return toMentorProfileResponse(profile);
+  }
+
+  @Put('me/languages')
+  async setMyLanguages(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SetMentorLanguagesDto,
+  ): Promise<MentorProfileResponseDto> {
+    const profile = await this.mentorsService.setMyLanguages(
+      user,
+      dto.languageIds,
+    );
     return toMentorProfileResponse(profile);
   }
 }

@@ -23,8 +23,15 @@ export class LanguagesRepository {
   }
 
   async findActiveByIds(languageIds: string[]): Promise<Language[]> {
+    if (languageIds.length === 0) {
+      return [];
+    }
+
     const rows = await this.prisma.language.findMany({
-      where: { id: { in: languageIds } },
+      where: {
+        id: { in: languageIds },
+        status: LanguageStatus.ACTIVE,
+      },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
     return rows.map((row: LanguageRow) => this.toDomain(row));
