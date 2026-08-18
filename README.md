@@ -47,7 +47,12 @@ Authenticated mentor JWT (HS256 stub):
 | GET | `/mentors/me` | Read own profile (includes languages) |
 | PATCH | `/mentors/me` | Update own profile |
 | PUT | `/mentors/me/languages` | Replace mentor languages |
+| POST | `/mentors/me/expertise` | Add skill expertise |
+| PATCH | `/mentors/me/expertise/:id` | Update own expertise |
+| DELETE | `/mentors/me/expertise/:id` | Remove own expertise |
 | GET | `/languages` | List active language catalogue |
+| GET | `/skills/categories` | List active skill categories |
+| GET | `/skills` | List active skills (`?categoryId=`) |
 
 ## Scripts
 

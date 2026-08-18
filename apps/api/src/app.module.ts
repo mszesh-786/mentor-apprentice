@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { LanguagesModule } from './languages/languages.module';
 import { MentorsModule } from './mentors/mentors.module';
+import { SkillsModule } from './skills/skills.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -11,6 +12,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     UsersModule,
     LanguagesModule,
+    SkillsModule,
     MentorsModule,
   ],
 })

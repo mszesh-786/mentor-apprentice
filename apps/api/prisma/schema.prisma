@@ -32,6 +32,23 @@ enum LanguageStatus {
   DISABLED
 }
 
+enum CatalogueStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  DISABLED
+}
+
+enum TeachingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExpertiseStatus {
+  ACTIVE
+  DISABLED
+}
+
 model User {
   id             String     @id @default(cuid())
   authProviderId String     @unique
@@ -75,8 +92,9 @@ model MentorProfile {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   languages MentorLanguage[]
+  expertise MentorExpertise[]
 
   @@map("mentor_profiles")
 }
@@ -103,4 +121,54 @@ model MentorLanguage {
 
   @@id([mentorProfileId, languageId])
   @@map("mentor_languages")
+}
+
+model SkillCategory {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  name        String
+  description String?
+  status      CatalogueStatus @default(ACTIVE)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  skills Skill[]
+
+  @@map("skill_categories")
+}
+
+model Skill {
+  id          String          @id @default(cuid())
+  categoryId  String
+  slug        String          @unique
+  name        String
+  description String?
+  status      CatalogueStatus @default(ACTIVE)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  category  SkillCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  expertise MentorExpertise[]
+
+  @@map("skills")
+}
+
+model MentorExpertise {
+  id               String          @id @default(cuid())
+  mentorProfileId  String
+  skillId          String
+  yearsExperience  Int
+  description      String?
+  teachingLevel    TeachingLevel
+  status           ExpertiseStatus @default(ACTIVE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+  skill         Skill         @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([mentorProfileId, skillId])
+  @@map("mentor_expertise")
 }

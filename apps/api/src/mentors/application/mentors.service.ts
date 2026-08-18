@@ -7,8 +7,11 @@ import {
   NotFoundError,
 } from '../../common/errors/domain-error';
 import { LanguagesService } from '../../languages/application/languages.service';
+import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
+import { CreateMentorExpertiseDto } from '../dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from '../dto/create-mentor-profile.dto';
+import { UpdateMentorExpertiseDto } from '../dto/update-mentor-expertise.dto';
 import { UpdateMentorProfileDto } from '../dto/update-mentor-profile.dto';
 import { MentorProfile } from '../domain/mentor-profile';
 import { MentorsRepository } from '../persistence/mentors.repository';
@@ -19,6 +22,7 @@ export class MentorsService {
     private readonly mentorsRepository: MentorsRepository,
     private readonly usersService: UsersService,
     private readonly languagesService: LanguagesService,
+    private readonly skillsService: SkillsService,
   ) {}
 
   async createProfile(
@@ -111,6 +115,82 @@ export class MentorsService {
     }
 
     return updated;
+  }
+
+  async addExpertise(
+    user: AuthUser,
+    dto: CreateMentorExpertiseDto,
+  ): Promise<MentorProfile> {
+    this.assertActive(user);
+    const profile = await this.requireOwnProfile(user);
+    await this.skillsService.assertActiveSkill(dto.skillId);
+
+    const duplicate =
+      await this.mentorsRepository.findExpertiseByMentorAndSkill(
+        profile.id,
+        dto.skillId,
+      );
+    if (duplicate) {
+      throw new ConflictError('Expertise for this skill already exists');
+    }
+
+    await this.mentorsRepository.createExpertise({
+      mentorProfileId: profile.id,
+      skillId: dto.skillId,
+      yearsExperience: dto.yearsExperience,
+      description: dto.description,
+      teachingLevel: dto.teachingLevel,
+    });
+
+    return this.requireOwnProfile(user);
+  }
+
+  async updateExpertise(
+    user: AuthUser,
+    expertiseId: string,
+    dto: UpdateMentorExpertiseDto,
+  ): Promise<MentorProfile> {
+    this.assertActive(user);
+    const profile = await this.requireOwnProfile(user);
+    await this.requireOwnExpertise(profile.id, expertiseId);
+
+    await this.mentorsRepository.updateExpertise(expertiseId, {
+      yearsExperience: dto.yearsExperience,
+      description: dto.description,
+      teachingLevel: dto.teachingLevel,
+    });
+
+    return this.requireOwnProfile(user);
+  }
+
+  async removeExpertise(
+    user: AuthUser,
+    expertiseId: string,
+  ): Promise<MentorProfile> {
+    this.assertActive(user);
+    const profile = await this.requireOwnProfile(user);
+    await this.requireOwnExpertise(profile.id, expertiseId);
+    await this.mentorsRepository.deleteExpertise(expertiseId);
+    return this.requireOwnProfile(user);
+  }
+
+  private async requireOwnProfile(user: AuthUser): Promise<MentorProfile> {
+    const profile = await this.mentorsRepository.findByUserId(user.id);
+    if (!profile) {
+      throw new NotFoundError('Mentor profile not found');
+    }
+    return profile;
+  }
+
+  private async requireOwnExpertise(
+    mentorProfileId: string,
+    expertiseId: string,
+  ): Promise<void> {
+    const expertise =
+      await this.mentorsRepository.findExpertiseById(expertiseId);
+    if (!expertise || expertise.mentorProfileId !== mentorProfileId) {
+      throw new NotFoundError('Expertise not found');
+    }
   }
 
   private assertActive(user: AuthUser): void {

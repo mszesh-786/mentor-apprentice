@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  CatalogueStatus,
   LanguageStatus,
   PublicationStatus,
   Role,
@@ -54,6 +55,7 @@ describe('MentorsController (e2e)', () => {
   });
 
   beforeEach(async () => {
+    await prisma.mentorExpertise.deleteMany();
     await prisma.mentorLanguage.deleteMany();
     await prisma.mentorProfile.deleteMany();
     await prisma.userRole.deleteMany();
@@ -61,6 +63,7 @@ describe('MentorsController (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.mentorExpertise.deleteMany();
     await prisma.mentorLanguage.deleteMany();
     await prisma.mentorProfile.deleteMany();
     await prisma.userRole.deleteMany();
@@ -112,6 +115,7 @@ describe('MentorsController (e2e)', () => {
       hourlyRate: '45.00',
       currency: 'EUR',
       languages: [],
+      expertise: [],
     });
     const created = createRes.body as {
       id: string;
@@ -126,9 +130,14 @@ describe('MentorsController (e2e)', () => {
       .set(authHeader())
       .expect(200);
 
-    const fetched = getRes.body as { id: string; languages: unknown[] };
+    const fetched = getRes.body as {
+      id: string;
+      languages: unknown[];
+      expertise: unknown[];
+    };
     expect(fetched.id).toBe(created.id);
     expect(fetched.languages).toEqual([]);
+    expect(fetched.expertise).toEqual([]);
 
     const patchRes = await request(app.getHttpServer())
       .patch('/mentors/me')
@@ -239,6 +248,164 @@ describe('MentorsController (e2e)', () => {
       .expect(400);
   });
 
+  it('adds, updates, and removes expertise', async () => {
+    const { skillId } = await seedSkills(prisma);
+
+    await request(app.getHttpServer())
+      .post('/mentors/profile')
+      .set(authHeader())
+      .send({ headline: 'Skill mentor' })
+      .expect(201);
+
+    const addRes = await request(app.getHttpServer())
+      .post('/mentors/me/expertise')
+      .set(authHeader())
+      .send({
+        skillId,
+        yearsExperience: 32,
+        description: 'Workshop mechanic',
+        teachingLevel: 'BEGINNER',
+      })
+      .expect(201);
+
+    const added = addRes.body as {
+      expertise: Array<{
+        id: string;
+        skillId: string;
+        yearsExperience: number;
+        teachingLevel: string;
+        skill: { name: string };
+      }>;
+    };
+    expect(added.expertise).toHaveLength(1);
+    expect(added.expertise[0]?.skillId).toBe(skillId);
+    expect(added.expertise[0]?.skill.name).toBe('Basic Car Maintenance');
+
+    const expertiseId = added.expertise[0]?.id;
+
+    const patchRes = await request(app.getHttpServer())
+      .patch(`/mentors/me/expertise/${expertiseId}`)
+      .set(authHeader())
+      .send({ yearsExperience: 40, teachingLevel: 'INTERMEDIATE' })
+      .expect(200);
+
+    const patched = patchRes.body as {
+      expertise: Array<{ yearsExperience: number; teachingLevel: string }>;
+    };
+    expect(patched.expertise[0]?.yearsExperience).toBe(40);
+    expect(patched.expertise[0]?.teachingLevel).toBe('INTERMEDIATE');
+
+    const deleteRes = await request(app.getHttpServer())
+      .delete(`/mentors/me/expertise/${expertiseId}`)
+      .set(authHeader())
+      .expect(200);
+
+    const removed = deleteRes.body as { expertise: unknown[] };
+    expect(removed.expertise).toEqual([]);
+  });
+
+  it('rejects duplicate mentor+skill expertise', async () => {
+    const { skillId } = await seedSkills(prisma);
+
+    await request(app.getHttpServer())
+      .post('/mentors/profile')
+      .set(authHeader())
+      .send({ headline: 'Skill mentor' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/mentors/me/expertise')
+      .set(authHeader())
+      .send({
+        skillId,
+        yearsExperience: 10,
+        teachingLevel: 'BEGINNER',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/mentors/me/expertise')
+      .set(authHeader())
+      .send({
+        skillId,
+        yearsExperience: 12,
+        teachingLevel: 'INTERMEDIATE',
+      })
+      .expect(409);
+  });
+
+  it('rejects adding a disabled skill', async () => {
+    const { disabledSkillId } = await seedSkills(prisma);
+
+    await request(app.getHttpServer())
+      .post('/mentors/profile')
+      .set(authHeader())
+      .send({ headline: 'Skill mentor' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/mentors/me/expertise')
+      .set(authHeader())
+      .send({
+        skillId: disabledSkillId,
+        yearsExperience: 5,
+        teachingLevel: 'BEGINNER',
+      })
+      .expect(400);
+  });
+
+  it('rejects unauthenticated expertise mutation', async () => {
+    await request(app.getHttpServer())
+      .post('/mentors/me/expertise')
+      .send({
+        skillId: 'any',
+        yearsExperience: 5,
+        teachingLevel: 'BEGINNER',
+      })
+      .expect(401);
+  });
+
+  it('rejects updating another mentor expertise', async () => {
+    const { skillId } = await seedSkills(prisma);
+
+    await request(app.getHttpServer())
+      .post('/mentors/profile')
+      .set(authHeader())
+      .send({ headline: 'Owner mentor' })
+      .expect(201);
+
+    const addRes = await request(app.getHttpServer())
+      .post('/mentors/me/expertise')
+      .set(authHeader())
+      .send({
+        skillId,
+        yearsExperience: 8,
+        teachingLevel: 'BEGINNER',
+      })
+      .expect(201);
+
+    const added = addRes.body as { expertise: Array<{ id: string }> };
+    const expertiseId = added.expertise[0]?.id;
+
+    const otherToken = authHeader({
+      sub: 'e2e-mentor-2',
+      email: 'other-mentor@example.com',
+      roles: [Role.MENTOR],
+    });
+
+    await request(app.getHttpServer())
+      .post('/mentors/profile')
+      .set(otherToken)
+      .send({ headline: 'Other mentor' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/mentors/me/expertise/${expertiseId}`)
+      .set(otherToken)
+      .send({ yearsExperience: 1 })
+      .expect(404);
+  });
+
   it('returns 403 when user is suspended', async () => {
     await request(app.getHttpServer())
       .post('/mentors/profile')
@@ -294,4 +461,59 @@ async function seedLanguages(
   });
 
   return { englishId: english.id, finnishId: finnish.id };
+}
+
+async function seedSkills(
+  prisma: PrismaService,
+): Promise<{ skillId: string; disabledSkillId: string }> {
+  const category = await prisma.skillCategory.upsert({
+    where: { slug: 'automotive' },
+    create: {
+      slug: 'automotive',
+      name: 'Automotive',
+      sortOrder: 1,
+      status: CatalogueStatus.ACTIVE,
+    },
+    update: {
+      name: 'Automotive',
+      sortOrder: 1,
+      status: CatalogueStatus.ACTIVE,
+    },
+  });
+
+  const skill = await prisma.skill.upsert({
+    where: { slug: 'basic-car-maintenance' },
+    create: {
+      slug: 'basic-car-maintenance',
+      name: 'Basic Car Maintenance',
+      sortOrder: 1,
+      status: CatalogueStatus.ACTIVE,
+      categoryId: category.id,
+    },
+    update: {
+      name: 'Basic Car Maintenance',
+      sortOrder: 1,
+      status: CatalogueStatus.ACTIVE,
+      categoryId: category.id,
+    },
+  });
+
+  const disabled = await prisma.skill.upsert({
+    where: { slug: 'engine-maintenance-disabled' },
+    create: {
+      slug: 'engine-maintenance-disabled',
+      name: 'Disabled Engine Skill',
+      sortOrder: 99,
+      status: CatalogueStatus.DISABLED,
+      categoryId: category.id,
+    },
+    update: {
+      name: 'Disabled Engine Skill',
+      sortOrder: 99,
+      status: CatalogueStatus.DISABLED,
+      categoryId: category.id,
+    },
+  });
+
+  return { skillId: skill.id, disabledSkillId: disabled.id };
 }

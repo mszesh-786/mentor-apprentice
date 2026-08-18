@@ -1,5 +1,6 @@
 import { PublicationStatus } from '@prisma/client';
 import { Language } from '../../languages/domain/language';
+import { MentorExpertise } from './mentor-expertise';
 
 export type MentorProfile = {
   id: string;
@@ -13,6 +14,7 @@ export type MentorProfile = {
   currency: string | null;
   publicationStatus: PublicationStatus;
   languages: Language[];
+  expertise: MentorExpertise[];
   createdAt: Date;
   updatedAt: Date;
 };

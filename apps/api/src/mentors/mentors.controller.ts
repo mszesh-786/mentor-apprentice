@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Post,
   Put,
@@ -16,9 +18,11 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { MentorsService } from './application/mentors.service';
+import { CreateMentorExpertiseDto } from './dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from './dto/create-mentor-profile.dto';
 import { MentorProfileResponseDto } from './dto/mentor-profile-response.dto';
 import { SetMentorLanguagesDto } from './dto/set-mentor-languages.dto';
+import { UpdateMentorExpertiseDto } from './dto/update-mentor-expertise.dto';
 import { UpdateMentorProfileDto } from './dto/update-mentor-profile.dto';
 import { toMentorProfileResponse } from './mappers/mentor-profile.mapper';
 
@@ -63,6 +67,42 @@ export class MentorsController {
     const profile = await this.mentorsService.setMyLanguages(
       user,
       dto.languageIds,
+    );
+    return toMentorProfileResponse(profile);
+  }
+
+  @Post('me/expertise')
+  @HttpCode(HttpStatus.CREATED)
+  async addExpertise(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateMentorExpertiseDto,
+  ): Promise<MentorProfileResponseDto> {
+    const profile = await this.mentorsService.addExpertise(user, dto);
+    return toMentorProfileResponse(profile);
+  }
+
+  @Patch('me/expertise/:expertiseId')
+  async updateExpertise(
+    @CurrentUser() user: AuthUser,
+    @Param('expertiseId') expertiseId: string,
+    @Body() dto: UpdateMentorExpertiseDto,
+  ): Promise<MentorProfileResponseDto> {
+    const profile = await this.mentorsService.updateExpertise(
+      user,
+      expertiseId,
+      dto,
+    );
+    return toMentorProfileResponse(profile);
+  }
+
+  @Delete('me/expertise/:expertiseId')
+  async removeExpertise(
+    @CurrentUser() user: AuthUser,
+    @Param('expertiseId') expertiseId: string,
+  ): Promise<MentorProfileResponseDto> {
+    const profile = await this.mentorsService.removeExpertise(
+      user,
+      expertiseId,
     );
     return toMentorProfileResponse(profile);
   }
