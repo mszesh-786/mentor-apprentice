@@ -55,6 +55,7 @@ describe('MentorsController (e2e)', () => {
   });
 
   beforeEach(async () => {
+    await prisma.verification.deleteMany();
     await prisma.mentorExpertise.deleteMany();
     await prisma.mentorLanguage.deleteMany();
     await prisma.mentorProfile.deleteMany();
@@ -63,6 +64,7 @@ describe('MentorsController (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.verification.deleteMany();
     await prisma.mentorExpertise.deleteMany();
     await prisma.mentorLanguage.deleteMany();
     await prisma.mentorProfile.deleteMany();
@@ -116,6 +118,7 @@ describe('MentorsController (e2e)', () => {
       currency: 'EUR',
       languages: [],
       expertise: [],
+      identityVerification: { status: 'NOT_STARTED' },
     });
     const created = createRes.body as {
       id: string;

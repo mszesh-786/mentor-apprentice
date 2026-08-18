@@ -5,6 +5,7 @@ import { LanguagesModule } from './languages/languages.module';
 import { MentorsModule } from './mentors/mentors.module';
 import { SkillsModule } from './skills/skills.module';
 import { UsersModule } from './users/users.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     LanguagesModule,
     SkillsModule,
+    VerificationModule,
     MentorsModule,
   ],
 })

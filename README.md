@@ -53,6 +53,11 @@ Authenticated mentor JWT (HS256 stub):
 | GET | `/languages` | List active language catalogue |
 | GET | `/skills/categories` | List active skill categories |
 | GET | `/skills` | List active skills (`?categoryId=`) |
+| GET | `/verifications/me` | Own identity verification status |
+| POST | `/verifications/identity` | Start or retry identity verification (MENTOR) |
+| POST | `/verifications/identity/stub-result` | Stub provider result (MENTOR; disable with `ALLOW_VERIFICATION_STUB=false`) |
+
+Identity verification belongs to **User**, not MentorProfile. Mentors may create and edit a DRAFT profile before verification. `FAILED` / `REQUIRES_REVIEW` are not verified. Publish/bookable gate is Wave 6.
 
 ## Scripts
 

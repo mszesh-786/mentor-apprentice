@@ -3,6 +3,7 @@ import {
   CatalogueStatus,
   ExpertiseStatus,
   TeachingLevel,
+  VerificationStatus,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../database/prisma.service';
@@ -244,6 +245,7 @@ export class MentorsRepository {
       expertise: row.expertise
         .map((entry) => this.toExpertise(entry))
         .sort((left, right) => left.skill.name.localeCompare(right.skill.name)),
+      identityVerificationStatus: VerificationStatus.NOT_STARTED,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

@@ -6,12 +6,14 @@ import {
   Role,
   TeachingLevel,
   UserStatus,
+  VerificationStatus,
 } from '@prisma/client';
 import { MentorsService } from './mentors.service';
 import { MentorsRepository } from '../persistence/mentors.repository';
 import { UsersService } from '../../users/users.service';
 import { LanguagesService } from '../../languages/application/languages.service';
 import { SkillsService } from '../../skills/application/skills.service';
+import { VerificationService } from '../../verification/application/verification.service';
 import { AuthUser } from '../../auth/auth-user';
 import {
   ConflictError,
@@ -61,6 +63,7 @@ describe('MentorsService', () => {
     publicationStatus: PublicationStatus.DRAFT,
     languages: [],
     expertise: [],
+    identityVerificationStatus: VerificationStatus.NOT_STARTED,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
@@ -93,6 +96,9 @@ describe('MentorsService', () => {
   let usersService: jest.Mocked<Pick<UsersService, 'updateDisplayName'>>;
   let languagesService: jest.Mocked<Pick<LanguagesService, 'assertActiveIds'>>;
   let skillsService: jest.Mocked<Pick<SkillsService, 'assertActiveSkill'>>;
+  let verificationService: jest.Mocked<
+    Pick<VerificationService, 'getIdentityStatus'>
+  >;
   let service: MentorsService;
 
   beforeEach(() => {
@@ -116,11 +122,17 @@ describe('MentorsService', () => {
     skillsService = {
       assertActiveSkill: jest.fn(),
     };
+    verificationService = {
+      getIdentityStatus: jest
+        .fn()
+        .mockResolvedValue(VerificationStatus.NOT_STARTED),
+    };
     service = new MentorsService(
       mentorsRepository as unknown as MentorsRepository,
       usersService as unknown as UsersService,
       languagesService as unknown as LanguagesService,
       skillsService as unknown as SkillsService,
+      verificationService as unknown as VerificationService,
     );
   });
 
@@ -138,6 +150,9 @@ describe('MentorsService', () => {
     });
 
     expect(result.publicationStatus).toBe(PublicationStatus.DRAFT);
+    expect(result.identityVerificationStatus).toBe(
+      VerificationStatus.NOT_STARTED,
+    );
     expect(mentorsRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-1', currency: 'EUR' }),
     );
@@ -174,6 +189,17 @@ describe('MentorsService', () => {
     await expect(service.getMyProfile(activeMentor)).resolves.toEqual(
       draftProfile,
     );
+  });
+
+  it('attaches identity verification status to own profile', async () => {
+    mentorsRepository.findByUserId.mockResolvedValue(draftProfile);
+    verificationService.getIdentityStatus.mockResolvedValue(
+      VerificationStatus.VERIFIED,
+    );
+
+    const result = await service.getMyProfile(activeMentor);
+
+    expect(result.identityVerificationStatus).toBe(VerificationStatus.VERIFIED);
   });
 
   it('throws when profile is missing', async () => {

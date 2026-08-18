@@ -63,6 +63,7 @@ model User {
 
   roles         UserRole[]
   mentorProfile MentorProfile?
+  verifications Verification[]
 
   @@map("users")
 }
@@ -171,4 +172,39 @@ model MentorExpertise {
 
   @@unique([mentorProfileId, skillId])
   @@map("mentor_expertise")
+}
+
+enum VerificationType {
+  IDENTITY
+  CREDENTIAL
+}
+
+enum VerificationStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  FAILED
+  REQUIRES_REVIEW
+}
+
+enum VerificationProvider {
+  STUB
+}
+
+model Verification {
+  id                String               @id @default(cuid())
+  userId            String
+  type              VerificationType
+  status            VerificationStatus   @default(NOT_STARTED)
+  provider          VerificationProvider @default(STUB)
+  providerReference String?
+  submittedAt       DateTime?
+  verifiedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("verifications")
 }

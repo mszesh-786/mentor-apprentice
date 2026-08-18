@@ -9,6 +9,7 @@ import {
 import { LanguagesService } from '../../languages/application/languages.service';
 import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
+import { VerificationService } from '../../verification/application/verification.service';
 import { CreateMentorExpertiseDto } from '../dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from '../dto/create-mentor-profile.dto';
 import { UpdateMentorExpertiseDto } from '../dto/update-mentor-expertise.dto';
@@ -23,6 +24,7 @@ export class MentorsService {
     private readonly usersService: UsersService,
     private readonly languagesService: LanguagesService,
     private readonly skillsService: SkillsService,
+    private readonly verificationService: VerificationService,
   ) {}
 
   async createProfile(
@@ -41,16 +43,18 @@ export class MentorsService {
       await this.usersService.updateDisplayName(user.id, dto.displayName);
     }
 
-    return this.mentorsRepository.create({
-      userId: user.id,
-      headline: dto.headline,
-      biography: dto.biography,
-      generalLocation: dto.generalLocation,
-      timezone: dto.timezone,
-      profilePhotoUrl: dto.profilePhotoUrl,
-      hourlyRate: dto.hourlyRate,
-      currency: dto.currency,
-    });
+    return this.attachIdentityStatus(
+      await this.mentorsRepository.create({
+        userId: user.id,
+        headline: dto.headline,
+        biography: dto.biography,
+        generalLocation: dto.generalLocation,
+        timezone: dto.timezone,
+        profilePhotoUrl: dto.profilePhotoUrl,
+        hourlyRate: dto.hourlyRate,
+        currency: dto.currency,
+      }),
+    );
   }
 
   async getMyProfile(user: AuthUser): Promise<MentorProfile> {
@@ -58,7 +62,7 @@ export class MentorsService {
     if (!profile) {
       throw new NotFoundError('Mentor profile not found');
     }
-    return profile;
+    return this.attachIdentityStatus(profile);
   }
 
   async updateMyProfile(
@@ -80,15 +84,17 @@ export class MentorsService {
       await this.usersService.updateDisplayName(user.id, dto.displayName);
     }
 
-    return this.mentorsRepository.update(user.id, {
-      headline: dto.headline,
-      biography: dto.biography,
-      generalLocation: dto.generalLocation,
-      timezone: dto.timezone,
-      profilePhotoUrl: dto.profilePhotoUrl,
-      hourlyRate: dto.hourlyRate,
-      currency: dto.currency,
-    });
+    return this.attachIdentityStatus(
+      await this.mentorsRepository.update(user.id, {
+        headline: dto.headline,
+        biography: dto.biography,
+        generalLocation: dto.generalLocation,
+        timezone: dto.timezone,
+        profilePhotoUrl: dto.profilePhotoUrl,
+        hourlyRate: dto.hourlyRate,
+        currency: dto.currency,
+      }),
+    );
   }
 
   async setMyLanguages(
@@ -114,7 +120,7 @@ export class MentorsService {
       throw new NotFoundError('Mentor profile not found');
     }
 
-    return updated;
+    return this.attachIdentityStatus(updated);
   }
 
   async addExpertise(
@@ -179,7 +185,17 @@ export class MentorsService {
     if (!profile) {
       throw new NotFoundError('Mentor profile not found');
     }
-    return profile;
+    return this.attachIdentityStatus(profile);
+  }
+
+  private async attachIdentityStatus(
+    profile: MentorProfile,
+  ): Promise<MentorProfile> {
+    return {
+      ...profile,
+      identityVerificationStatus:
+        await this.verificationService.getIdentityStatus(profile.userId),
+    };
   }
 
   private async requireOwnExpertise(

@@ -1,4 +1,4 @@
-import { PublicationStatus } from '@prisma/client';
+import { PublicationStatus, VerificationStatus } from '@prisma/client';
 import { LanguageResponseDto } from '../../languages/dto/language-response.dto';
 import { MentorExpertiseResponseDto } from './mentor-expertise-response.dto';
 
@@ -15,6 +15,7 @@ export class MentorProfileResponseDto {
   publicationStatus!: PublicationStatus;
   languages!: LanguageResponseDto[];
   expertise!: MentorExpertiseResponseDto[];
+  identityVerification!: { status: VerificationStatus };
   createdAt!: string;
   updatedAt!: string;
 }

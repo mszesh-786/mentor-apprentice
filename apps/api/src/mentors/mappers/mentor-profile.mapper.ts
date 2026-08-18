@@ -35,6 +35,7 @@ export function toMentorProfileResponse(
     publicationStatus: profile.publicationStatus,
     languages: profile.languages.map(toLanguageResponse),
     expertise: profile.expertise.map(toMentorExpertiseResponse),
+    identityVerification: { status: profile.identityVerificationStatus },
     createdAt: profile.createdAt.toISOString(),
     updatedAt: profile.updatedAt.toISOString(),
   };

@@ -1,4 +1,4 @@
-import { PublicationStatus } from '@prisma/client';
+import { PublicationStatus, VerificationStatus } from '@prisma/client';
 import { Language } from '../../languages/domain/language';
 import { MentorExpertise } from './mentor-expertise';
 
@@ -15,6 +15,7 @@ export type MentorProfile = {
   publicationStatus: PublicationStatus;
   languages: Language[];
   expertise: MentorExpertise[];
+  identityVerificationStatus: VerificationStatus;
   createdAt: Date;
   updatedAt: Date;
 };
