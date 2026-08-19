@@ -16,6 +16,7 @@ export class MentorProfileResponseDto {
   languages!: LanguageResponseDto[];
   expertise!: MentorExpertiseResponseDto[];
   identityVerification!: { status: VerificationStatus };
+  hasAvailability!: boolean;
   createdAt!: string;
   updatedAt!: string;
 }

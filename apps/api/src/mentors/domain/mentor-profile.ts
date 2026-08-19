@@ -16,6 +16,7 @@ export type MentorProfile = {
   languages: Language[];
   expertise: MentorExpertise[];
   identityVerificationStatus: VerificationStatus;
+  hasAvailability: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

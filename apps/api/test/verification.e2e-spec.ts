@@ -43,6 +43,7 @@ describe('VerificationController (e2e)', () => {
   });
 
   beforeEach(async () => {
+    await prisma.availabilityRule.deleteMany();
     await prisma.verification.deleteMany();
     await prisma.mentorExpertise.deleteMany();
     await prisma.mentorLanguage.deleteMany();
@@ -52,6 +53,7 @@ describe('VerificationController (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.availabilityRule.deleteMany();
     await prisma.verification.deleteMany();
     await prisma.userRole.deleteMany();
     await prisma.user.deleteMany();

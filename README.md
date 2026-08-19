@@ -56,8 +56,13 @@ Authenticated mentor JWT (HS256 stub):
 | GET | `/verifications/me` | Own identity verification status |
 | POST | `/verifications/identity` | Start or retry identity verification (MENTOR) |
 | POST | `/verifications/identity/stub-result` | Stub provider result (MENTOR; disable with `ALLOW_VERIFICATION_STUB=false`) |
+| GET | `/mentors/me/availability` | List own weekly availability rules |
+| PUT | `/mentors/me/availability` | Replace all availability rules |
+| DELETE | `/mentors/me/availability/:ruleId` | Remove one availability rule |
 
 Identity verification belongs to **User**, not MentorProfile. Mentors may create and edit a DRAFT profile before verification. `FAILED` / `REQUIRES_REVIEW` are not verified. Publish/bookable gate is Wave 6.
+
+Availability belongs to **MentorProfile**. Each rule stores a timezone (defaults to profile timezone). Overlapping windows on the same day are rejected. `hasAvailability` on `GET /mentors/me` is data only until Wave 6.
 
 ## Scripts
 

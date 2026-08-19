@@ -49,6 +49,21 @@ enum ExpertiseStatus {
   DISABLED
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AvailabilityRuleStatus {
+  ACTIVE
+  DISABLED
+}
+
 model User {
   id             String     @id @default(cuid())
   authProviderId String     @unique
@@ -96,6 +111,7 @@ model MentorProfile {
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   languages MentorLanguage[]
   expertise MentorExpertise[]
+  availabilityRules AvailabilityRule[]
 
   @@map("mentor_profiles")
 }
@@ -172,6 +188,23 @@ model MentorExpertise {
 
   @@unique([mentorProfileId, skillId])
   @@map("mentor_expertise")
+}
+
+model AvailabilityRule {
+  id              String                 @id @default(cuid())
+  mentorProfileId String
+  dayOfWeek       DayOfWeek
+  startTime       String
+  endTime         String
+  timezone        String
+  status          AvailabilityRuleStatus @default(ACTIVE)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([mentorProfileId, dayOfWeek, startTime])
+  @@map("availability_rules")
 }
 
 enum VerificationType {

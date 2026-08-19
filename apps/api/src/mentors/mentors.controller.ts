@@ -18,6 +18,10 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { MentorsService } from './application/mentors.service';
+import { AvailabilityService } from './availability/application/availability.service';
+import { AvailabilityRuleResponseDto } from './availability/dto/availability-rule-response.dto';
+import { SetMentorAvailabilityDto } from './availability/dto/set-mentor-availability.dto';
+import { toAvailabilityRuleResponse } from './availability/mappers/availability-rule.mapper';
 import { CreateMentorExpertiseDto } from './dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from './dto/create-mentor-profile.dto';
 import { MentorProfileResponseDto } from './dto/mentor-profile-response.dto';
@@ -30,7 +34,10 @@ import { toMentorProfileResponse } from './mappers/mentor-profile.mapper';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.MENTOR)
 export class MentorsController {
-  constructor(private readonly mentorsService: MentorsService) {}
+  constructor(
+    private readonly mentorsService: MentorsService,
+    private readonly availabilityService: AvailabilityService,
+  ) {}
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)
@@ -105,5 +112,34 @@ export class MentorsController {
       expertiseId,
     );
     return toMentorProfileResponse(profile);
+  }
+
+  @Get('me/availability')
+  async getMyAvailability(
+    @CurrentUser() user: AuthUser,
+  ): Promise<AvailabilityRuleResponseDto[]> {
+    const rules = await this.availabilityService.getMyRules(user);
+    return rules.map(toAvailabilityRuleResponse);
+  }
+
+  @Put('me/availability')
+  async setMyAvailability(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SetMentorAvailabilityDto,
+  ): Promise<AvailabilityRuleResponseDto[]> {
+    const rules = await this.availabilityService.replaceMyRules(
+      user,
+      dto.rules,
+    );
+    return rules.map(toAvailabilityRuleResponse);
+  }
+
+  @Delete('me/availability/:ruleId')
+  async removeAvailabilityRule(
+    @CurrentUser() user: AuthUser,
+    @Param('ruleId') ruleId: string,
+  ): Promise<AvailabilityRuleResponseDto[]> {
+    const rules = await this.availabilityService.removeMyRule(user, ruleId);
+    return rules.map(toAvailabilityRuleResponse);
   }
 }

@@ -10,6 +10,7 @@ import { LanguagesService } from '../../languages/application/languages.service'
 import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
 import { VerificationService } from '../../verification/application/verification.service';
+import { AvailabilityService } from '../availability/application/availability.service';
 import { CreateMentorExpertiseDto } from '../dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from '../dto/create-mentor-profile.dto';
 import { UpdateMentorExpertiseDto } from '../dto/update-mentor-expertise.dto';
@@ -25,6 +26,7 @@ export class MentorsService {
     private readonly languagesService: LanguagesService,
     private readonly skillsService: SkillsService,
     private readonly verificationService: VerificationService,
+    private readonly availabilityService: AvailabilityService,
   ) {}
 
   async createProfile(
@@ -43,7 +45,7 @@ export class MentorsService {
       await this.usersService.updateDisplayName(user.id, dto.displayName);
     }
 
-    return this.attachIdentityStatus(
+    return this.attachProfileMetadata(
       await this.mentorsRepository.create({
         userId: user.id,
         headline: dto.headline,
@@ -62,7 +64,7 @@ export class MentorsService {
     if (!profile) {
       throw new NotFoundError('Mentor profile not found');
     }
-    return this.attachIdentityStatus(profile);
+    return this.attachProfileMetadata(profile);
   }
 
   async updateMyProfile(
@@ -84,7 +86,7 @@ export class MentorsService {
       await this.usersService.updateDisplayName(user.id, dto.displayName);
     }
 
-    return this.attachIdentityStatus(
+    return this.attachProfileMetadata(
       await this.mentorsRepository.update(user.id, {
         headline: dto.headline,
         biography: dto.biography,
@@ -120,7 +122,7 @@ export class MentorsService {
       throw new NotFoundError('Mentor profile not found');
     }
 
-    return this.attachIdentityStatus(updated);
+    return this.attachProfileMetadata(updated);
   }
 
   async addExpertise(
@@ -185,16 +187,21 @@ export class MentorsService {
     if (!profile) {
       throw new NotFoundError('Mentor profile not found');
     }
-    return this.attachIdentityStatus(profile);
+    return this.attachProfileMetadata(profile);
   }
 
-  private async attachIdentityStatus(
+  private async attachProfileMetadata(
     profile: MentorProfile,
   ): Promise<MentorProfile> {
+    const [identityVerificationStatus, hasAvailability] = await Promise.all([
+      this.verificationService.getIdentityStatus(profile.userId),
+      this.availabilityService.hasActiveAvailability(profile.id),
+    ]);
+
     return {
       ...profile,
-      identityVerificationStatus:
-        await this.verificationService.getIdentityStatus(profile.userId),
+      identityVerificationStatus,
+      hasAvailability,
     };
   }
 

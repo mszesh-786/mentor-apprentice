@@ -14,6 +14,7 @@ import { UsersService } from '../../users/users.service';
 import { LanguagesService } from '../../languages/application/languages.service';
 import { SkillsService } from '../../skills/application/skills.service';
 import { VerificationService } from '../../verification/application/verification.service';
+import { AvailabilityService } from '../availability/application/availability.service';
 import { AuthUser } from '../../auth/auth-user';
 import {
   ConflictError,
@@ -64,6 +65,7 @@ describe('MentorsService', () => {
     languages: [],
     expertise: [],
     identityVerificationStatus: VerificationStatus.NOT_STARTED,
+    hasAvailability: false,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
@@ -99,6 +101,9 @@ describe('MentorsService', () => {
   let verificationService: jest.Mocked<
     Pick<VerificationService, 'getIdentityStatus'>
   >;
+  let availabilityService: jest.Mocked<
+    Pick<AvailabilityService, 'hasActiveAvailability'>
+  >;
   let service: MentorsService;
 
   beforeEach(() => {
@@ -127,12 +132,16 @@ describe('MentorsService', () => {
         .fn()
         .mockResolvedValue(VerificationStatus.NOT_STARTED),
     };
+    availabilityService = {
+      hasActiveAvailability: jest.fn().mockResolvedValue(false),
+    };
     service = new MentorsService(
       mentorsRepository as unknown as MentorsRepository,
       usersService as unknown as UsersService,
       languagesService as unknown as LanguagesService,
       skillsService as unknown as SkillsService,
       verificationService as unknown as VerificationService,
+      availabilityService as unknown as AvailabilityService,
     );
   });
 
@@ -153,6 +162,7 @@ describe('MentorsService', () => {
     expect(result.identityVerificationStatus).toBe(
       VerificationStatus.NOT_STARTED,
     );
+    expect(result.hasAvailability).toBe(false);
     expect(mentorsRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-1', currency: 'EUR' }),
     );

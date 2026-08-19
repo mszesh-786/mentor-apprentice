@@ -246,6 +246,7 @@ export class MentorsRepository {
         .map((entry) => this.toExpertise(entry))
         .sort((left, right) => left.skill.name.localeCompare(right.skill.name)),
       identityVerificationStatus: VerificationStatus.NOT_STARTED,
+      hasAvailability: false,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
