@@ -122,7 +122,15 @@ describe('MentorsController (e2e)', () => {
       expertise: [],
       identityVerification: { status: 'NOT_STARTED' },
       hasAvailability: false,
+      publicationEligibility: { eligible: false },
+      isBookable: false,
     });
+    const createdBody = createRes.body as {
+      publicationEligibility: { requirements: unknown[] };
+    };
+    expect(
+      createdBody.publicationEligibility.requirements.length,
+    ).toBeGreaterThan(0);
     const created = createRes.body as {
       id: string;
       userId: string;

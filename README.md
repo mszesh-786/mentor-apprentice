@@ -64,6 +64,12 @@ Identity verification belongs to **User**, not MentorProfile. Mentors may create
 
 Availability belongs to **MentorProfile**. Each rule stores a timezone (defaults to profile timezone). Overlapping windows on the same day are rejected. `hasAvailability` on `GET /mentors/me` is data only until Wave 6.
 
+| GET | `/mentors/me/publication-eligibility` | Publication readiness checklist |
+| POST | `/mentors/me/publish` | Publish profile when eligible (`422` with missing requirements if not) |
+| POST | `/mentors/me/unpublish` | Unpublish profile |
+
+`GET /mentors/me` includes `publicationEligibility` and `isBookable`. Only `VERIFIED` identity + active expertise + availability makes a **published** mentor bookable. No discovery or booking in this wave.
+
 ## Scripts
 
 | Command | Description |

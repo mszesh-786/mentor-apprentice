@@ -7,6 +7,14 @@ import { EnsureUserInput, UserRecord } from './users.types';
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: string): Promise<UserRecord | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+    return user ? this.toRecord(user) : null;
+  }
+
   async findByAuthProviderId(
     authProviderId: string,
   ): Promise<UserRecord | null> {

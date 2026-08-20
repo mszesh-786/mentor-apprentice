@@ -1,5 +1,6 @@
 import { toLanguageResponse } from '../../languages/mappers/language.mapper';
 import { toSkillResponse } from '../../skills/mappers/skill.mapper';
+import { toPublicationEligibilityResponse } from '../publication/mappers/publication.mapper';
 import { MentorExpertise } from '../domain/mentor-expertise';
 import { MentorProfile } from '../domain/mentor-profile';
 import { MentorExpertiseResponseDto } from '../dto/mentor-expertise-response.dto';
@@ -37,6 +38,10 @@ export function toMentorProfileResponse(
     expertise: profile.expertise.map(toMentorExpertiseResponse),
     identityVerification: { status: profile.identityVerificationStatus },
     hasAvailability: profile.hasAvailability,
+    publicationEligibility: toPublicationEligibilityResponse(
+      profile.publicationEligibility,
+    ),
+    isBookable: profile.isBookable,
     createdAt: profile.createdAt.toISOString(),
     updatedAt: profile.updatedAt.toISOString(),
   };

@@ -11,6 +11,7 @@ import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
 import { VerificationService } from '../../verification/application/verification.service';
 import { AvailabilityService } from '../availability/application/availability.service';
+import { PublicationService } from '../publication/application/publication.service';
 import { CreateMentorExpertiseDto } from '../dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from '../dto/create-mentor-profile.dto';
 import { UpdateMentorExpertiseDto } from '../dto/update-mentor-expertise.dto';
@@ -27,6 +28,7 @@ export class MentorsService {
     private readonly skillsService: SkillsService,
     private readonly verificationService: VerificationService,
     private readonly availabilityService: AvailabilityService,
+    private readonly publicationService: PublicationService,
   ) {}
 
   async createProfile(
@@ -193,15 +195,34 @@ export class MentorsService {
   private async attachProfileMetadata(
     profile: MentorProfile,
   ): Promise<MentorProfile> {
-    const [identityVerificationStatus, hasAvailability] = await Promise.all([
-      this.verificationService.getIdentityStatus(profile.userId),
-      this.availabilityService.hasActiveAvailability(profile.id),
-    ]);
+    const [identityVerificationStatus, hasAvailability, userRecord] =
+      await Promise.all([
+        this.verificationService.getIdentityStatus(profile.userId),
+        this.availabilityService.hasActiveAvailability(profile.id),
+        this.usersService.findById(profile.userId),
+      ]);
 
-    return {
+    if (!userRecord) {
+      throw new NotFoundError('User not found');
+    }
+
+    const enrichedProfile = {
       ...profile,
       identityVerificationStatus,
       hasAvailability,
+    };
+
+    const publicationFields =
+      this.publicationService.buildProfilePublicationFields({
+        user: userRecord,
+        profile: enrichedProfile,
+        identityVerificationStatus,
+        hasAvailability,
+      });
+
+    return {
+      ...enrichedProfile,
+      ...publicationFields,
     };
   }
 

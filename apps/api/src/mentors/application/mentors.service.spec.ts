@@ -15,6 +15,7 @@ import { LanguagesService } from '../../languages/application/languages.service'
 import { SkillsService } from '../../skills/application/skills.service';
 import { VerificationService } from '../../verification/application/verification.service';
 import { AvailabilityService } from '../availability/application/availability.service';
+import { PublicationService } from '../publication/application/publication.service';
 import { AuthUser } from '../../auth/auth-user';
 import {
   ConflictError,
@@ -66,6 +67,8 @@ describe('MentorsService', () => {
     expertise: [],
     identityVerificationStatus: VerificationStatus.NOT_STARTED,
     hasAvailability: false,
+    publicationEligibility: { eligible: false, requirements: [] },
+    isBookable: false,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
@@ -95,7 +98,9 @@ describe('MentorsService', () => {
       | 'deleteExpertise'
     >
   >;
-  let usersService: jest.Mocked<Pick<UsersService, 'updateDisplayName'>>;
+  let usersService: jest.Mocked<
+    Pick<UsersService, 'updateDisplayName' | 'findById'>
+  >;
   let languagesService: jest.Mocked<Pick<LanguagesService, 'assertActiveIds'>>;
   let skillsService: jest.Mocked<Pick<SkillsService, 'assertActiveSkill'>>;
   let verificationService: jest.Mocked<
@@ -103,6 +108,9 @@ describe('MentorsService', () => {
   >;
   let availabilityService: jest.Mocked<
     Pick<AvailabilityService, 'hasActiveAvailability'>
+  >;
+  let publicationService: jest.Mocked<
+    Pick<PublicationService, 'buildProfilePublicationFields'>
   >;
   let service: MentorsService;
 
@@ -120,6 +128,15 @@ describe('MentorsService', () => {
     };
     usersService = {
       updateDisplayName: jest.fn(),
+      findById: jest.fn().mockResolvedValue({
+        id: 'user-1',
+        authProviderId: 'auth-1',
+        email: 'mentor@example.com',
+        emailVerified: true,
+        displayName: 'David',
+        status: UserStatus.ACTIVE,
+        roles: [Role.MENTOR],
+      }),
     };
     languagesService = {
       assertActiveIds: jest.fn(),
@@ -135,6 +152,12 @@ describe('MentorsService', () => {
     availabilityService = {
       hasActiveAvailability: jest.fn().mockResolvedValue(false),
     };
+    publicationService = {
+      buildProfilePublicationFields: jest.fn().mockReturnValue({
+        publicationEligibility: { eligible: false, requirements: [] },
+        isBookable: false,
+      }),
+    };
     service = new MentorsService(
       mentorsRepository as unknown as MentorsRepository,
       usersService as unknown as UsersService,
@@ -142,6 +165,7 @@ describe('MentorsService', () => {
       skillsService as unknown as SkillsService,
       verificationService as unknown as VerificationService,
       availabilityService as unknown as AvailabilityService,
+      publicationService as unknown as PublicationService,
     );
   });
 
@@ -206,10 +230,15 @@ describe('MentorsService', () => {
     verificationService.getIdentityStatus.mockResolvedValue(
       VerificationStatus.VERIFIED,
     );
+    publicationService.buildProfilePublicationFields.mockReturnValue({
+      publicationEligibility: { eligible: true, requirements: [] },
+      isBookable: false,
+    });
 
     const result = await service.getMyProfile(activeMentor);
 
     expect(result.identityVerificationStatus).toBe(VerificationStatus.VERIFIED);
+    expect(result.publicationEligibility.eligible).toBe(true);
   });
 
   it('throws when profile is missing', async () => {

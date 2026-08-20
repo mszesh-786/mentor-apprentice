@@ -1,6 +1,7 @@
 import { PublicationStatus, VerificationStatus } from '@prisma/client';
 import { Language } from '../../languages/domain/language';
 import { MentorExpertise } from './mentor-expertise';
+import { PublicationEligibility } from '../publication/domain/publication-eligibility';
 
 export type MentorProfile = {
   id: string;
@@ -17,6 +18,8 @@ export type MentorProfile = {
   expertise: MentorExpertise[];
   identityVerificationStatus: VerificationStatus;
   hasAvailability: boolean;
+  publicationEligibility: PublicationEligibility;
+  isBookable: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

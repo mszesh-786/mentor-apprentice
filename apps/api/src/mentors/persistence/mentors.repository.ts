@@ -201,6 +201,18 @@ export class MentorsRepository {
     await this.prisma.mentorExpertise.delete({ where: { id } });
   }
 
+  async updatePublicationStatus(
+    userId: string,
+    publicationStatus: MentorProfile['publicationStatus'],
+  ): Promise<MentorProfile> {
+    const row = await this.prisma.mentorProfile.update({
+      where: { userId },
+      data: { publicationStatus },
+      include: profileInclude,
+    });
+    return this.toDomain(row);
+  }
+
   private toDomain(row: {
     id: string;
     userId: string;
@@ -247,6 +259,11 @@ export class MentorsRepository {
         .sort((left, right) => left.skill.name.localeCompare(right.skill.name)),
       identityVerificationStatus: VerificationStatus.NOT_STARTED,
       hasAvailability: false,
+      publicationEligibility: {
+        eligible: false,
+        requirements: [],
+      },
+      isBookable: false,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

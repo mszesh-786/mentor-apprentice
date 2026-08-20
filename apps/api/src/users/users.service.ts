@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuthUser } from '../auth/auth-user';
 import { UsersRepository } from './users.repository';
-import { EnsureUserInput } from './users.types';
+import { EnsureUserInput, UserRecord } from './users.types';
 
 @Injectable()
 export class UsersService {
@@ -31,5 +31,9 @@ export class UsersService {
 
   async updateDisplayName(userId: string, displayName: string): Promise<void> {
     await this.usersRepository.updateDisplayName(userId, displayName);
+  }
+
+  async findById(userId: string): Promise<UserRecord | null> {
+    return this.usersRepository.findById(userId);
   }
 }

@@ -28,6 +28,9 @@ import { MentorProfileResponseDto } from './dto/mentor-profile-response.dto';
 import { SetMentorLanguagesDto } from './dto/set-mentor-languages.dto';
 import { UpdateMentorExpertiseDto } from './dto/update-mentor-expertise.dto';
 import { UpdateMentorProfileDto } from './dto/update-mentor-profile.dto';
+import { PublicationService } from './publication/application/publication.service';
+import { PublicationEligibilityResponseDto } from './publication/dto/publication-eligibility-response.dto';
+import { toPublicationEligibilityResponse } from './publication/mappers/publication.mapper';
 import { toMentorProfileResponse } from './mappers/mentor-profile.mapper';
 
 @Controller('mentors')
@@ -37,6 +40,7 @@ export class MentorsController {
   constructor(
     private readonly mentorsService: MentorsService,
     private readonly availabilityService: AvailabilityService,
+    private readonly publicationService: PublicationService,
   ) {}
 
   @Post('profile')
@@ -141,5 +145,33 @@ export class MentorsController {
   ): Promise<AvailabilityRuleResponseDto[]> {
     const rules = await this.availabilityService.removeMyRule(user, ruleId);
     return rules.map(toAvailabilityRuleResponse);
+  }
+
+  @Get('me/publication-eligibility')
+  async getPublicationEligibility(
+    @CurrentUser() user: AuthUser,
+  ): Promise<PublicationEligibilityResponseDto> {
+    const eligibility = await this.publicationService.getEligibility(user);
+    return toPublicationEligibilityResponse(eligibility);
+  }
+
+  @Post('me/publish')
+  @HttpCode(HttpStatus.OK)
+  async publish(
+    @CurrentUser() user: AuthUser,
+  ): Promise<MentorProfileResponseDto> {
+    await this.publicationService.publish(user);
+    const profile = await this.mentorsService.getMyProfile(user);
+    return toMentorProfileResponse(profile);
+  }
+
+  @Post('me/unpublish')
+  @HttpCode(HttpStatus.OK)
+  async unpublish(
+    @CurrentUser() user: AuthUser,
+  ): Promise<MentorProfileResponseDto> {
+    await this.publicationService.unpublish(user);
+    const profile = await this.mentorsService.getMyProfile(user);
+    return toMentorProfileResponse(profile);
   }
 }
