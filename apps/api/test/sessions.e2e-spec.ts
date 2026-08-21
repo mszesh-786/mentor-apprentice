@@ -8,6 +8,7 @@ import {
   DayOfWeek,
   LanguageStatus,
   Role,
+  SessionStatus,
   TeachingLevel,
   VerificationStatus,
 } from '@prisma/client';
@@ -17,7 +18,7 @@ import { AppModule } from '../src/app.module';
 import { DomainExceptionFilter } from '../src/common/errors/domain-exception.filter';
 import { PrismaService } from '../src/database/prisma.service';
 
-describe('Bookings (e2e)', () => {
+describe('Sessions (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let jwtService: JwtService;
@@ -25,30 +26,25 @@ describe('Bookings (e2e)', () => {
   let skillId: string;
 
   const mentorToken = {
-    sub: 'e2e-booking-mentor',
-    email: 'e2e-booking-mentor@example.com',
-    displayName: 'Booking Mentor',
+    sub: 'e2e-session-mentor',
+    email: 'e2e-session-mentor@example.com',
+    displayName: 'Session Mentor',
     roles: [Role.MENTOR],
     emailVerified: true,
   };
 
   const apprenticeToken = {
-    sub: 'e2e-booking-apprentice',
-    email: 'e2e-booking-apprentice@example.com',
-    displayName: 'Booking Apprentice',
-    roles: [Role.APPRENTICE],
-    emailVerified: true,
-  };
-
-  const apprentice2Token = {
-    sub: 'e2e-booking-apprentice-2',
-    email: 'e2e-booking-apprentice-2@example.com',
-    displayName: 'Booking Apprentice 2',
+    sub: 'e2e-session-apprentice',
+    email: 'e2e-session-apprentice@example.com',
+    displayName: 'Session Apprentice',
     roles: [Role.APPRENTICE],
     emailVerified: true,
   };
 
   beforeAll(async () => {
+    process.env.SESSION_JOIN_OPEN_MINUTES_BEFORE = '100000';
+    process.env.SESSION_JOIN_CLOSE_MINUTES_AFTER_END = '100000';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -73,11 +69,11 @@ describe('Bookings (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await cleanBookingTables(prisma);
+    await cleanSessionTables(prisma);
   });
 
   afterAll(async () => {
-    await cleanBookingTables(prisma);
+    await cleanSessionTables(prisma);
     await app.close();
   });
 
@@ -85,7 +81,10 @@ describe('Bookings (e2e)', () => {
     return { Authorization: `Bearer ${jwtService.sign(payload)}` };
   }
 
-  it('requests, accepts, auto-declines conflict, and respects exceptions', async () => {
+  async function acceptedBooking(): Promise<{
+    bookingId: string;
+    sessionId: string;
+  }> {
     const mentorProfileId = await publishBookableMentor(
       app,
       auth(mentorToken),
@@ -99,106 +98,105 @@ describe('Bookings (e2e)', () => {
       .send({ shortBio: 'Learner' })
       .expect(201);
 
-    await request(app.getHttpServer())
-      .post('/apprentices/profile')
-      .set(auth(apprentice2Token))
-      .send({ shortBio: 'Learner 2' })
-      .expect(201);
-
-    const startAt = '2026-08-24T07:00:00.000Z';
-
-    const first = await request(app.getHttpServer())
+    const booking = await request(app.getHttpServer())
       .post('/bookings')
       .set(auth(apprenticeToken))
       .send({
         mentorProfileId,
         skillId,
-        startAt,
-        durationMinutes: 30,
-        apprenticeMessage: 'Need oil change tips',
-      })
-      .expect(201);
-
-    expect((first.body as { status: string }).status).toBe(
-      BookingStatus.REQUESTED,
-    );
-
-    const second = await request(app.getHttpServer())
-      .post('/bookings')
-      .set(auth(apprentice2Token))
-      .send({
-        mentorProfileId,
-        skillId,
-        startAt,
+        startAt: '2026-08-24T07:00:00.000Z',
         durationMinutes: 30,
       })
       .expect(201);
 
     await request(app.getHttpServer())
-      .post(`/bookings/${(first.body as { id: string }).id}/accept`)
+      .post(`/bookings/${(booking.body as { id: string }).id}/accept`)
       .set(auth(mentorToken))
       .expect(200);
 
-    const declined = await request(app.getHttpServer())
-      .get(`/bookings/${(second.body as { id: string }).id}`)
-      .set(auth(apprentice2Token))
+    const session = await request(app.getHttpServer())
+      .get(`/bookings/${(booking.body as { id: string }).id}/session`)
+      .set(auth(apprenticeToken))
       .expect(200);
 
-    expect(declined.body).toMatchObject({
-      status: BookingStatus.DECLINED,
-      declineReason: 'CONFLICT',
+    return {
+      bookingId: (booking.body as { id: string }).id,
+      sessionId: (session.body as { id: string }).id,
+    };
+  }
+
+  it('creates session on accept, joins, completes, and allows mentor summary', async () => {
+    const { bookingId, sessionId } = await acceptedBooking();
+
+    const created = await request(app.getHttpServer())
+      .get(`/sessions/${sessionId}`)
+      .set(auth(mentorToken))
+      .expect(200);
+
+    expect(created.body).toMatchObject({
+      status: SessionStatus.READY,
+      bookingId,
+      videoProvider: 'STUB',
     });
+    expect((created.body as { joinUrl: string }).joinUrl).toContain('stub-');
 
     await request(app.getHttpServer())
-      .post('/bookings')
-      .set(auth(apprentice2Token))
-      .send({
-        mentorProfileId,
-        skillId,
-        startAt,
-        durationMinutes: 30,
-      })
+      .post(`/sessions/${sessionId}/complete`)
+      .set(auth(mentorToken))
       .expect(409);
 
     await request(app.getHttpServer())
-      .post('/mentors/me/availability-exceptions')
+      .post(`/sessions/${sessionId}/join`)
       .set(auth(mentorToken))
-      .send({ date: '2026-08-31', startTime: '10:00', endTime: '11:00' })
-      .expect(201);
+      .expect(200);
 
     await request(app.getHttpServer())
-      .post('/bookings')
-      .set(auth(apprenticeToken))
-      .send({
-        mentorProfileId,
-        skillId,
-        startAt: '2026-08-31T07:00:00.000Z',
-        durationMinutes: 30,
-      })
-      .expect(400);
-
-    const slots = await request(app.getHttpServer())
-      .get(`/discovery/mentors/${mentorProfileId}/slots`)
-      .query({
-        from: '2026-08-24T06:00:00.000Z',
-        to: '2026-08-24T10:00:00.000Z',
-        durationMinutes: 30,
-      })
+      .post(`/sessions/${sessionId}/join`)
       .set(auth(apprenticeToken))
       .expect(200);
 
-    expect(
-      (slots.body as Array<{ startAt: string }>).some(
-        (slot) => slot.startAt === startAt,
-      ),
-    ).toBe(false);
+    const completed = await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/complete`)
+      .set(auth(apprenticeToken))
+      .expect(200);
+
+    expect(completed.body).toMatchObject({
+      status: SessionStatus.COMPLETED,
+    });
+
+    const booking = await prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+    });
+    expect(booking.status).toBe(BookingStatus.COMPLETED);
+
+    await request(app.getHttpServer())
+      .put(`/sessions/${sessionId}/summary`)
+      .set(auth(apprenticeToken))
+      .send({ summary: 'Nope' })
+      .expect(403);
+
+    const withSummary = await request(app.getHttpServer())
+      .put(`/sessions/${sessionId}/summary`)
+      .set(auth(mentorToken))
+      .send({
+        summary: 'Covered oil changes',
+        nextStep: 'Practice filter swap',
+      })
+      .expect(200);
+
+    expect(withSummary.body).toMatchObject({
+      summary: {
+        summary: 'Covered oil changes',
+        nextStep: 'Practice filter swap',
+      },
+    });
 
     const events = await prisma.analyticsEvent.findMany({
       where: {
         type: {
           in: [
-            AnalyticsEventType.BOOKING_REQUESTED,
-            AnalyticsEventType.BOOKING_ACCEPTED,
+            AnalyticsEventType.SESSION_JOINED,
+            AnalyticsEventType.SESSION_COMPLETED,
           ],
         },
       },
@@ -206,63 +204,49 @@ describe('Bookings (e2e)', () => {
     expect(events.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('lets mentor decline and apprentice cancel', async () => {
-    const mentorProfileId = await publishBookableMentor(
-      app,
-      auth(mentorToken),
-      englishId,
-      skillId,
-    );
+  it('marks no-show with absent participant', async () => {
+    const { bookingId, sessionId } = await acceptedBooking();
 
     await request(app.getHttpServer())
-      .post('/apprentices/profile')
-      .set(auth(apprenticeToken))
-      .send({ shortBio: 'Learner' })
-      .expect(201);
-
-    const created = await request(app.getHttpServer())
-      .post('/bookings')
-      .set(auth(apprenticeToken))
-      .send({
-        mentorProfileId,
-        skillId,
-        startAt: '2026-08-24T07:00:00.000Z',
-        durationMinutes: 15,
-      })
-      .expect(201);
-
-    await request(app.getHttpServer())
-      .post(`/bookings/${(created.body as { id: string }).id}/decline`)
+      .post(`/sessions/${sessionId}/join`)
       .set(auth(mentorToken))
       .expect(200);
 
-    const second = await request(app.getHttpServer())
-      .post('/bookings')
-      .set(auth(apprenticeToken))
-      .send({
-        mentorProfileId,
-        skillId,
-        startAt: '2026-08-24T07:30:00.000Z',
-        durationMinutes: 30,
-      })
-      .expect(201);
-
-    await request(app.getHttpServer())
-      .post(`/bookings/${(second.body as { id: string }).id}/accept`)
+    const noShow = await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/report-no-show`)
       .set(auth(mentorToken))
       .expect(200);
 
-    await request(app.getHttpServer())
-      .post(`/bookings/${(second.body as { id: string }).id}/cancel`)
+    expect(noShow.body).toMatchObject({
+      status: SessionStatus.FAILED,
+      failureReason: 'NO_SHOW',
+    });
+    expect((noShow.body as { absentUserId: string }).absentUserId).toBeTruthy();
+
+    const bookingNoShow = await prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+    });
+    expect(bookingNoShow.status).toBe(BookingStatus.NO_SHOW);
+  });
+
+  it('terminates booking on technical failure', async () => {
+    const { bookingId, sessionId } = await acceptedBooking();
+
+    const failed = await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/report-technical-failure`)
       .set(auth(apprenticeToken))
       .expect(200);
 
-    const mine = await request(app.getHttpServer())
-      .get('/bookings/me')
-      .set(auth(apprenticeToken))
-      .expect(200);
+    expect(failed.body).toMatchObject({
+      status: SessionStatus.FAILED,
+      failureReason: 'TECHNICAL_FAILURE',
+    });
 
-    expect((mine.body as unknown[]).length).toBeGreaterThanOrEqual(2);
+    const bookingFailed = await prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+    });
+    expect(bookingFailed.status).toBe(BookingStatus.CANCELLED);
+    expect(bookingFailed.cancelReason).toBe('TECHNICAL_FAILURE');
   });
 });
 
@@ -276,9 +260,9 @@ async function publishBookableMentor(
     .post('/mentors/profile')
     .set(headers)
     .send({
-      displayName: 'Booking Mentor',
-      headline: 'Booking mentor',
-      biography: 'Experienced mentor available for booking tests',
+      displayName: 'Session Mentor',
+      headline: 'Session mentor',
+      biography: 'Experienced mentor for session tests',
       timezone: 'Europe/Helsinki',
     })
     .expect(201);
@@ -332,7 +316,7 @@ async function publishBookableMentor(
   return (createRes.body as { id: string }).id;
 }
 
-async function cleanBookingTables(prisma: PrismaService): Promise<void> {
+async function cleanSessionTables(prisma: PrismaService): Promise<void> {
   await prisma.analyticsEvent.deleteMany();
   await prisma.sessionSummary.deleteMany();
   await prisma.session.deleteMany();

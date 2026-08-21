@@ -80,4 +80,63 @@ export class AnalyticsService {
       payload,
     });
   }
+
+  async recordSessionJoined(
+    actorUserId: string,
+    payload: { sessionId: string; bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.SESSION_JOINED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordSessionCompleted(
+    actorUserId: string,
+    payload: { sessionId: string; bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.SESSION_COMPLETED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordSessionNoShow(
+    actorUserId: string,
+    payload: {
+      sessionId: string;
+      bookingId: string;
+      absentUserId: string;
+    },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.SESSION_NO_SHOW,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordSessionTechFailure(
+    actorUserId: string,
+    payload: { sessionId: string; bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.SESSION_TECH_FAILURE,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordSessionCancelled(
+    actorUserId: string | null,
+    payload: { sessionId: string; bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.SESSION_CANCELLED,
+      actorUserId,
+      payload,
+    });
+  }
 }

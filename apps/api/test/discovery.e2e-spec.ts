@@ -375,6 +375,8 @@ async function publishDiscoverableMentor(
 
 async function cleanDiscoveryTables(prisma: PrismaService): Promise<void> {
   await prisma.analyticsEvent.deleteMany();
+  await prisma.sessionSummary.deleteMany();
+  await prisma.session.deleteMany();
   await prisma.booking.deleteMany();
   await prisma.availabilityException.deleteMany();
   await prisma.userBlock.deleteMany();

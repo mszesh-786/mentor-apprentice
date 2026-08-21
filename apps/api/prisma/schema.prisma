@@ -84,6 +84,10 @@ model User {
   blocksReceived  UserBlock[] @relation("Blocked")
   analyticsEvents AnalyticsEvent[]
   cancelledBookings Booking[] @relation("BookingCancelledBy")
+  sessionsAbsent    Session[] @relation("SessionAbsentUser")
+  sessionsReported  Session[] @relation("SessionReportedBy")
+  sessionSummariesCreated SessionSummary[] @relation("SessionSummaryCreatedBy")
+  sessionSummariesUpdated SessionSummary[] @relation("SessionSummaryUpdatedBy")
 
   @@map("users")
 }
@@ -305,6 +309,11 @@ enum AnalyticsEventType {
   BOOKING_ACCEPTED
   BOOKING_DECLINED
   BOOKING_CANCELLED
+  SESSION_JOINED
+  SESSION_COMPLETED
+  SESSION_NO_SHOW
+  SESSION_TECH_FAILURE
+  SESSION_CANCELLED
 }
 
 model AnalyticsEvent {
@@ -342,6 +351,7 @@ model Booking {
   apprenticeMessage   String?
   declineReason       String?
   cancelledByUserId   String?
+  cancelReason        String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
@@ -349,8 +359,69 @@ model Booking {
   apprenticeProfile ApprenticeProfile @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
   skill             Skill             @relation(fields: [skillId], references: [id], onDelete: Restrict)
   cancelledBy       User?             @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  session           Session?
 
   @@index([mentorProfileId, status, startAt])
   @@index([apprenticeProfileId, status, startAt])
   @@map("bookings")
+}
+
+enum SessionStatus {
+  READY
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SessionFailureReason {
+  TECHNICAL_FAILURE
+  NO_SHOW
+}
+
+enum VideoProvider {
+  STUB
+}
+
+model Session {
+  id                 String                @id @default(cuid())
+  bookingId          String                @unique
+  status             SessionStatus         @default(READY)
+  videoProvider      VideoProvider         @default(STUB)
+  externalRoomId     String
+  joinUrl            String
+  mentorJoinedAt     DateTime?
+  apprenticeJoinedAt DateTime?
+  startedAt          DateTime?
+  endedAt            DateTime?
+  failureReason      SessionFailureReason?
+  absentUserId       String?
+  reportedByUserId   String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  booking    Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  absentUser User?           @relation("SessionAbsentUser", fields: [absentUserId], references: [id], onDelete: SetNull)
+  reportedBy User?           @relation("SessionReportedBy", fields: [reportedByUserId], references: [id], onDelete: SetNull)
+  summary    SessionSummary?
+
+  @@index([status, createdAt])
+  @@map("sessions")
+}
+
+model SessionSummary {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  summary         String
+  nextStep        String?
+  createdByUserId String
+  updatedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("SessionSummaryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  updatedBy User?   @relation("SessionSummaryUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("session_summaries")
 }

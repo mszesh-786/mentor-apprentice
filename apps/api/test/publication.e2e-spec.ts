@@ -59,6 +59,8 @@ describe('PublicationController (e2e)', () => {
 
   beforeEach(async () => {
     await prisma.analyticsEvent.deleteMany();
+    await prisma.sessionSummary.deleteMany();
+    await prisma.session.deleteMany();
     await prisma.booking.deleteMany();
     await prisma.availabilityException.deleteMany();
     await prisma.userBlock.deleteMany();
@@ -74,6 +76,8 @@ describe('PublicationController (e2e)', () => {
 
   afterAll(async () => {
     await prisma.analyticsEvent.deleteMany();
+    await prisma.sessionSummary.deleteMany();
+    await prisma.session.deleteMany();
     await prisma.booking.deleteMany();
     await prisma.availabilityException.deleteMany();
     await prisma.userBlock.deleteMany();

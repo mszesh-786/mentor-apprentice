@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import {
   AvailabilityRuleStatus,
   BookingStatus,
@@ -26,6 +31,7 @@ import {
 } from '../../common/scheduling/scheduling';
 import { AvailabilityService } from '../../mentors/availability/application/availability.service';
 import { MentorsRepository } from '../../mentors/persistence/mentors.repository';
+import { SessionsService } from '../../sessions/application/sessions.service';
 import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
 import { VerificationService } from '../../verification/application/verification.service';
@@ -45,6 +51,8 @@ export class BookingsService {
     private readonly verificationService: VerificationService,
     private readonly blocksService: BlocksService,
     private readonly analyticsService: AnalyticsService,
+    @Inject(forwardRef(() => SessionsService))
+    private readonly sessionsService: SessionsService,
   ) {}
 
   async create(user: AuthUser, dto: CreateBookingDto): Promise<Booking> {
@@ -209,7 +217,12 @@ export class BookingsService {
     const cancelled = await this.bookingsRepository.updateStatus(booking.id, {
       status: BookingStatus.CANCELLED,
       cancelledByUserId: user.id,
+      cancelReason: 'USER_CANCELLED',
     });
+
+    if (booking.status === BookingStatus.ACCEPTED) {
+      await this.sessionsService.cancelForBooking(cancelled.id);
+    }
 
     await this.analyticsService.recordBookingCancelled(user.id, {
       bookingId: cancelled.id,

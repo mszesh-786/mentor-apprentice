@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma } from '@prisma/client';
+import {
+  BookingStatus,
+  Prisma,
+  SessionStatus,
+  VideoProvider,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { createStubVideoRoom } from '../../sessions/providers/stub-video.provider';
 import { Booking } from '../domain/booking';
 
 const bookingInclude = {
@@ -202,6 +208,17 @@ export class BookingsRepository {
         include: bookingInclude,
       });
 
+      const room = createStubVideoRoom(bookingId);
+      await tx.session.create({
+        data: {
+          bookingId,
+          status: SessionStatus.READY,
+          videoProvider: VideoProvider.STUB,
+          externalRoomId: room.externalRoomId,
+          joinUrl: room.joinUrl,
+        },
+      });
+
       if (conflictIds.length > 0) {
         await tx.booking.updateMany({
           where: {
@@ -225,6 +242,7 @@ export class BookingsRepository {
       status: BookingStatus;
       declineReason?: string | null;
       cancelledByUserId?: string | null;
+      cancelReason?: string | null;
     },
   ): Promise<Booking> {
     const row = await this.prisma.booking.update({
@@ -248,6 +266,7 @@ export class BookingsRepository {
       apprenticeMessage: row.apprenticeMessage,
       declineReason: row.declineReason,
       cancelledByUserId: row.cancelledByUserId,
+      cancelReason: row.cancelReason,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       mentorDisplayName: row.mentorProfile.user.displayName,

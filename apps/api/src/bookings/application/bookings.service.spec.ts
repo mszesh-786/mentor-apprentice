@@ -18,6 +18,7 @@ import {
 } from '../../common/errors/domain-error';
 import { AvailabilityService } from '../../mentors/availability/application/availability.service';
 import { MentorsRepository } from '../../mentors/persistence/mentors.repository';
+import { SessionsService } from '../../sessions/application/sessions.service';
 import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
 import { VerificationService } from '../../verification/application/verification.service';
@@ -139,6 +140,7 @@ describe('BookingsService', () => {
       | 'recordBookingCancelled'
     >
   >;
+  let sessionsService: jest.Mocked<Pick<SessionsService, 'cancelForBooking'>>;
   let service: BookingsService;
 
   beforeEach(() => {
@@ -202,6 +204,9 @@ describe('BookingsService', () => {
       recordBookingDeclined: jest.fn(),
       recordBookingCancelled: jest.fn(),
     };
+    sessionsService = {
+      cancelForBooking: jest.fn(),
+    };
 
     service = new BookingsService(
       bookingsRepository as unknown as BookingsRepository,
@@ -213,6 +218,7 @@ describe('BookingsService', () => {
       verificationService as unknown as VerificationService,
       blocksService as unknown as BlocksService,
       analyticsService as unknown as AnalyticsService,
+      sessionsService as unknown as SessionsService,
     );
   });
 

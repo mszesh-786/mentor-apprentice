@@ -12,6 +12,7 @@ export type Booking = {
   apprenticeMessage: string | null;
   declineReason: string | null;
   cancelledByUserId: string | null;
+  cancelReason?: string | null;
   createdAt: Date;
   updatedAt: Date;
   mentorDisplayName: string | null;

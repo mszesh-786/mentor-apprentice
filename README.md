@@ -104,7 +104,22 @@ Discovery requires APPRENTICE role. Results only include ACTIVE + PUBLISHED + VE
 
 Create body: `{ mentorProfileId, skillId, startAt (ISO UTC), durationMinutes: 15\|30\|60\|90, apprenticeMessage? }`.
 
-`REQUESTED` does not reserve. `ACCEPTED` reserves. Weekly rules + `UNAVAILABLE` exceptions apply on create. No payment, session, or mentorship relationship in this wave. Analytics: `BOOKING_REQUESTED`, `BOOKING_ACCEPTED`, `BOOKING_DECLINED`, `BOOKING_CANCELLED`.
+`REQUESTED` does not reserve. `ACCEPTED` reserves. Weekly rules + `UNAVAILABLE` exceptions apply on create. Accept creates a Session (`READY`) with stub join URL. No payment or mentorship relationship in this wave. Analytics: `BOOKING_REQUESTED`, `BOOKING_ACCEPTED`, `BOOKING_DECLINED`, `BOOKING_CANCELLED`.
+
+### Session (Wave 9)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/sessions/me` | List own sessions (`?upcoming=true\|false`) |
+| GET | `/sessions/:id` | Session detail (participants only) |
+| GET | `/bookings/:id/session` | Session for booking |
+| POST | `/sessions/:id/join` | Join within configurable window; records attendance |
+| POST | `/sessions/:id/complete` | Complete after both attended → Booking `COMPLETED` |
+| POST | `/sessions/:id/report-no-show` | No-show → Session `FAILED` + Booking `NO_SHOW` |
+| POST | `/sessions/:id/report-technical-failure` | Tech fail → Session `FAILED` + Booking `CANCELLED` |
+| PUT | `/sessions/:id/summary` | Mentor upserts shared summary after completion |
+
+Join window via `SESSION_JOIN_OPEN_MINUTES_BEFORE` (default 15) and `SESSION_JOIN_CLOSE_MINUTES_AFTER_END` (default 30). Stub video only. Analytics: `SESSION_JOINED`, `SESSION_COMPLETED`, `SESSION_NO_SHOW`, `SESSION_TECH_FAILURE`, `SESSION_CANCELLED`. No feedback, mentorship, Stripe, WebRTC, or auto-complete.
 
 ## Scripts
 

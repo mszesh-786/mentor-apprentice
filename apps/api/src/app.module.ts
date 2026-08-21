@@ -11,6 +11,7 @@ import { SkillsModule } from './skills/skills.module';
 import { UsersModule } from './users/users.module';
 import { VerificationModule } from './verification/verification.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { SessionsModule } from './sessions/sessions.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { BookingsModule } from './bookings/bookings.module';
     AnalyticsModule,
     DiscoveryModule,
     BookingsModule,
+    SessionsModule,
   ],
 })
 export class AppModule {}
