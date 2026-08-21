@@ -9,6 +9,6 @@ import { ApprenticesRepository } from './persistence/apprentices.repository';
   imports: [AuthModule, UsersModule],
   controllers: [ApprenticesController],
   providers: [ApprenticesService, ApprenticesRepository],
-  exports: [ApprenticesService],
+  exports: [ApprenticesService, ApprenticesRepository],
 })
 export class ApprenticesModule {}

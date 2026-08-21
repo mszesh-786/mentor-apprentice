@@ -6,6 +6,7 @@ import { UsersModule } from '../users/users.module';
 import { VerificationModule } from '../verification/verification.module';
 import { AvailabilityService } from './availability/application/availability.service';
 import { AvailabilityRepository } from './availability/persistence/availability.repository';
+import { AvailabilityExceptionRepository } from './availability/persistence/availability-exception.repository';
 import { PublicationService } from './publication/application/publication.service';
 import { MentorsService } from './application/mentors.service';
 import { MentorsController } from './mentors.controller';
@@ -25,8 +26,14 @@ import { MentorsRepository } from './persistence/mentors.repository';
     MentorsRepository,
     AvailabilityService,
     AvailabilityRepository,
+    AvailabilityExceptionRepository,
     PublicationService,
   ],
-  exports: [MentorsService, AvailabilityService, PublicationService],
+  exports: [
+    MentorsService,
+    MentorsRepository,
+    AvailabilityService,
+    PublicationService,
+  ],
 })
 export class MentorsModule {}

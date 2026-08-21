@@ -10,6 +10,7 @@ import { MentorsModule } from './mentors/mentors.module';
 import { SkillsModule } from './skills/skills.module';
 import { UsersModule } from './users/users.module';
 import { VerificationModule } from './verification/verification.module';
+import { BookingsModule } from './bookings/bookings.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { VerificationModule } from './verification/verification.module';
     BlocksModule,
     AnalyticsModule,
     DiscoveryModule,
+    BookingsModule,
   ],
 })
 export class AppModule {}

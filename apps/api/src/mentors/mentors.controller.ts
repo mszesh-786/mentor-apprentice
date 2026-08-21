@@ -21,6 +21,10 @@ import { MentorsService } from './application/mentors.service';
 import { AvailabilityService } from './availability/application/availability.service';
 import { AvailabilityRuleResponseDto } from './availability/dto/availability-rule-response.dto';
 import { SetMentorAvailabilityDto } from './availability/dto/set-mentor-availability.dto';
+import {
+  AvailabilityExceptionResponseDto,
+  CreateAvailabilityExceptionDto,
+} from './availability/dto/availability-exception.dto';
 import { toAvailabilityRuleResponse } from './availability/mappers/availability-rule.mapper';
 import { CreateMentorExpertiseDto } from './dto/create-mentor-expertise.dto';
 import { CreateMentorProfileDto } from './dto/create-mentor-profile.dto';
@@ -145,6 +149,60 @@ export class MentorsController {
   ): Promise<AvailabilityRuleResponseDto[]> {
     const rules = await this.availabilityService.removeMyRule(user, ruleId);
     return rules.map(toAvailabilityRuleResponse);
+  }
+
+  @Get('me/availability-exceptions')
+  async getMyAvailabilityExceptions(
+    @CurrentUser() user: AuthUser,
+  ): Promise<AvailabilityExceptionResponseDto[]> {
+    const exceptions = await this.availabilityService.listMyExceptions(user);
+    return exceptions.map((exception) => ({
+      id: exception.id,
+      date: exception.date,
+      startTime: exception.startTime,
+      endTime: exception.endTime,
+      type: exception.type,
+      createdAt: exception.createdAt.toISOString(),
+      updatedAt: exception.updatedAt.toISOString(),
+    }));
+  }
+
+  @Post('me/availability-exceptions')
+  @HttpCode(HttpStatus.CREATED)
+  async addAvailabilityException(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateAvailabilityExceptionDto,
+  ): Promise<AvailabilityExceptionResponseDto> {
+    const exception = await this.availabilityService.addException(user, dto);
+    return {
+      id: exception.id,
+      date: exception.date,
+      startTime: exception.startTime,
+      endTime: exception.endTime,
+      type: exception.type,
+      createdAt: exception.createdAt.toISOString(),
+      updatedAt: exception.updatedAt.toISOString(),
+    };
+  }
+
+  @Delete('me/availability-exceptions/:exceptionId')
+  async removeAvailabilityException(
+    @CurrentUser() user: AuthUser,
+    @Param('exceptionId') exceptionId: string,
+  ): Promise<AvailabilityExceptionResponseDto[]> {
+    const exceptions = await this.availabilityService.removeException(
+      user,
+      exceptionId,
+    );
+    return exceptions.map((exception) => ({
+      id: exception.id,
+      date: exception.date,
+      startTime: exception.startTime,
+      endTime: exception.endTime,
+      type: exception.type,
+      createdAt: exception.createdAt.toISOString(),
+      updatedAt: exception.updatedAt.toISOString(),
+    }));
   }
 
   @Get('me/publication-eligibility')

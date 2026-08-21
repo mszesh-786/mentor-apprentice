@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DayOfWeek, UserStatus } from '@prisma/client';
+import { DayOfWeek, UserStatus, AvailabilityRuleStatus } from '@prisma/client';
 import { AuthUser } from '../../../auth/auth-user';
 import {
   ForbiddenError,
@@ -11,11 +11,18 @@ import {
   AvailabilityRuleInput,
 } from '../domain/availability-rule';
 import { AvailabilityRepository } from '../persistence/availability.repository';
+import { AvailabilityExceptionRepository } from '../persistence/availability-exception.repository';
+import {
+  AvailabilityException,
+  AvailabilityExceptionInput,
+} from '../domain/availability-exception';
+import { toMinutes } from '../../../common/scheduling/scheduling';
 
 @Injectable()
 export class AvailabilityService {
   constructor(
     private readonly availabilityRepository: AvailabilityRepository,
+    private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly mentorsRepository: MentorsRepository,
   ) {}
 
@@ -60,6 +67,87 @@ export class AvailabilityService {
         mentorProfileId,
       );
     return count > 0;
+  }
+
+  async getActiveRulesForMentor(
+    mentorProfileId: string,
+  ): Promise<AvailabilityRule[]> {
+    const rules =
+      await this.availabilityRepository.findByMentorProfileId(mentorProfileId);
+    return rules.filter(
+      (rule) => rule.status === AvailabilityRuleStatus.ACTIVE,
+    );
+  }
+
+  async getExceptionsForMentor(
+    mentorProfileId: string,
+  ): Promise<AvailabilityException[]> {
+    return this.availabilityExceptionRepository.findByMentorProfileId(
+      mentorProfileId,
+    );
+  }
+
+  async getExceptionsInRange(
+    mentorProfileId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<AvailabilityException[]> {
+    return this.availabilityExceptionRepository.findByMentorAndDateRange(
+      mentorProfileId,
+      fromDate,
+      toDate,
+    );
+  }
+
+  async listMyExceptions(user: AuthUser): Promise<AvailabilityException[]> {
+    const profile = await this.requireOwnProfile(user);
+    return this.availabilityExceptionRepository.findByMentorProfileId(
+      profile.id,
+    );
+  }
+
+  async addException(
+    user: AuthUser,
+    input: AvailabilityExceptionInput,
+  ): Promise<AvailabilityException> {
+    this.assertActive(user);
+    const profile = await this.requireOwnProfile(user);
+    this.assertValidExceptionWindow(input);
+    return this.availabilityExceptionRepository.create(profile.id, input);
+  }
+
+  async removeException(
+    user: AuthUser,
+    exceptionId: string,
+  ): Promise<AvailabilityException[]> {
+    this.assertActive(user);
+    const profile = await this.requireOwnProfile(user);
+    const existing =
+      await this.availabilityExceptionRepository.findById(exceptionId);
+    if (!existing || existing.mentorProfileId !== profile.id) {
+      throw new NotFoundError('Availability exception not found');
+    }
+    await this.availabilityExceptionRepository.deleteById(exceptionId);
+    return this.availabilityExceptionRepository.findByMentorProfileId(
+      profile.id,
+    );
+  }
+
+  private assertValidExceptionWindow(input: AvailabilityExceptionInput): void {
+    const hasStart = input.startTime != null && input.startTime !== '';
+    const hasEnd = input.endTime != null && input.endTime !== '';
+    if (hasStart !== hasEnd) {
+      throw new BadRequestException(
+        'Exception startTime and endTime must both be set or both omitted',
+      );
+    }
+    if (hasStart && hasEnd) {
+      if (toMinutes(input.startTime!) >= toMinutes(input.endTime!)) {
+        throw new BadRequestException(
+          'Exception startTime must be before endTime',
+        );
+      }
+    }
   }
 
   normalizeRules(

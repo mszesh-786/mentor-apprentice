@@ -83,6 +83,7 @@ model User {
   blocksInitiated UserBlock[] @relation("Blocker")
   blocksReceived  UserBlock[] @relation("Blocked")
   analyticsEvents AnalyticsEvent[]
+  cancelledBookings Booking[] @relation("BookingCancelledBy")
 
   @@map("users")
 }
@@ -116,6 +117,8 @@ model MentorProfile {
   languages MentorLanguage[]
   expertise MentorExpertise[]
   availabilityRules AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  bookings Booking[]
 
   @@map("mentor_profiles")
 }
@@ -172,6 +175,7 @@ model Skill {
 
   category  SkillCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   expertise MentorExpertise[]
+  bookings  Booking[]
 
   @@map("skills")
 }
@@ -209,6 +213,26 @@ model AvailabilityRule {
 
   @@unique([mentorProfileId, dayOfWeek, startTime])
   @@map("availability_rules")
+}
+
+enum AvailabilityExceptionType {
+  UNAVAILABLE
+}
+
+model AvailabilityException {
+  id              String                     @id @default(cuid())
+  mentorProfileId String
+  date            String
+  startTime       String?
+  endTime         String?
+  type            AvailabilityExceptionType  @default(UNAVAILABLE)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([mentorProfileId, date])
+  @@map("availability_exceptions")
 }
 
 enum VerificationType {
@@ -255,6 +279,7 @@ model ApprenticeProfile {
   updatedAt       DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
 
   @@map("apprentice_profiles")
 }
@@ -276,6 +301,10 @@ model UserBlock {
 enum AnalyticsEventType {
   SKILL_SEARCH
   MENTOR_PROFILE_VIEW
+  BOOKING_REQUESTED
+  BOOKING_ACCEPTED
+  BOOKING_DECLINED
+  BOOKING_CANCELLED
 }
 
 model AnalyticsEvent {
@@ -289,4 +318,39 @@ model AnalyticsEvent {
 
   @@index([type, createdAt])
   @@map("analytics_events")
+}
+
+enum BookingStatus {
+  REQUESTED
+  ACCEPTED
+  CONFIRMED
+  COMPLETED
+  DECLINED
+  CANCELLED
+  NO_SHOW
+}
+
+model Booking {
+  id                  String        @id @default(cuid())
+  mentorProfileId     String
+  apprenticeProfileId String
+  skillId             String
+  startAt             DateTime
+  endAt               DateTime
+  timezoneSnapshot    String
+  status              BookingStatus @default(REQUESTED)
+  apprenticeMessage   String?
+  declineReason       String?
+  cancelledByUserId   String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  mentorProfile     MentorProfile     @relation(fields: [mentorProfileId], references: [id], onDelete: Restrict)
+  apprenticeProfile ApprenticeProfile @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
+  skill             Skill             @relation(fields: [skillId], references: [id], onDelete: Restrict)
+  cancelledBy       User?             @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+
+  @@index([mentorProfileId, status, startAt])
+  @@index([apprenticeProfileId, status, startAt])
+  @@map("bookings")
 }

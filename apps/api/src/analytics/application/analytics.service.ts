@@ -32,4 +32,52 @@ export class AnalyticsService {
       payload,
     });
   }
+
+  async recordBookingRequested(
+    actorUserId: string,
+    payload: {
+      bookingId: string;
+      mentorProfileId: string;
+      skillId: string;
+    },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.BOOKING_REQUESTED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordBookingAccepted(
+    actorUserId: string,
+    payload: { bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.BOOKING_ACCEPTED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordBookingDeclined(
+    actorUserId: string,
+    payload: { bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.BOOKING_DECLINED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordBookingCancelled(
+    actorUserId: string,
+    payload: { bookingId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.BOOKING_CANCELLED,
+      actorUserId,
+      payload,
+    });
+  }
 }

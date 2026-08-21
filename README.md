@@ -59,6 +59,9 @@ Authenticated mentor JWT (HS256 stub):
 | GET | `/mentors/me/availability` | List own weekly availability rules |
 | PUT | `/mentors/me/availability` | Replace all availability rules |
 | DELETE | `/mentors/me/availability/:ruleId` | Remove one availability rule |
+| GET | `/mentors/me/availability-exceptions` | List unavailability exceptions |
+| POST | `/mentors/me/availability-exceptions` | Add unavailability exception |
+| DELETE | `/mentors/me/availability-exceptions/:exceptionId` | Remove exception |
 
 Identity verification belongs to **User**, not MentorProfile. Mentors may create and edit a DRAFT profile before verification. `FAILED` / `REQUIRES_REVIEW` are not verified. Publish/bookable gate is Wave 6.
 
@@ -68,7 +71,7 @@ Availability belongs to **MentorProfile**. Each rule stores a timezone (defaults
 | POST | `/mentors/me/publish` | Publish profile when eligible (`422` with missing requirements if not) |
 | POST | `/mentors/me/unpublish` | Unpublish profile |
 
-`GET /mentors/me` includes `publicationEligibility` and `isBookable`. Only `VERIFIED` identity + active expertise + availability makes a **published** mentor bookable. No discovery or booking in this wave.
+`GET /mentors/me` includes `publicationEligibility` and `isBookable`. Only `VERIFIED` identity + active expertise + availability makes a **published** mentor bookable.
 
 ### Apprentice + Discovery (Wave 7)
 
@@ -81,8 +84,27 @@ Availability belongs to **MentorProfile**. Each rule stores a timezone (defaults
 | DELETE | `/blocks/:blockedUserId` | Unblock |
 | GET | `/discovery/mentors?skillId=` | Search bookable mentors (`languageId`, `teachingLevel` optional) |
 | GET | `/discovery/mentors/:profileId` | Public mentor detail |
+| GET | `/discovery/mentors/:profileId/slots` | Available slots (`from`, `to`, `durationMinutes`) |
 
-Discovery requires APPRENTICE role. Results only include ACTIVE + PUBLISHED + VERIFIED mentors with matching active expertise and availability. Blocked users are excluded. Search and profile views record analytics events (`SKILL_SEARCH`, `MENTOR_PROFILE_VIEW`). No booking in this wave.
+Discovery requires APPRENTICE role. Results only include ACTIVE + PUBLISHED + VERIFIED mentors with matching active expertise and availability. Blocked users are excluded. Search and profile views record analytics events (`SKILL_SEARCH`, `MENTOR_PROFILE_VIEW`).
+
+### Booking (Wave 8)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/mentors/me/availability-exceptions` | List unavailability exceptions |
+| POST | `/mentors/me/availability-exceptions` | Add exception (`date`, optional `startTime`/`endTime`) |
+| DELETE | `/mentors/me/availability-exceptions/:exceptionId` | Remove exception |
+| POST | `/bookings` | Apprentice requests booking |
+| GET | `/bookings/me` | List own bookings (`?upcoming=true\|false`) |
+| GET | `/bookings/:id` | Booking detail (participants only) |
+| POST | `/bookings/:id/accept` | Mentor accepts (reserves; auto-declines conflicting REQUESTED) |
+| POST | `/bookings/:id/decline` | Mentor declines |
+| POST | `/bookings/:id/cancel` | Participant cancels REQUESTED/ACCEPTED |
+
+Create body: `{ mentorProfileId, skillId, startAt (ISO UTC), durationMinutes: 15\|30\|60\|90, apprenticeMessage? }`.
+
+`REQUESTED` does not reserve. `ACCEPTED` reserves. Weekly rules + `UNAVAILABLE` exceptions apply on create. No payment, session, or mentorship relationship in this wave. Analytics: `BOOKING_REQUESTED`, `BOOKING_ACCEPTED`, `BOOKING_DECLINED`, `BOOKING_CANCELLED`.
 
 ## Scripts
 

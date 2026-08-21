@@ -72,6 +72,14 @@ export class MentorsRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findById(id: string): Promise<MentorProfile | null> {
+    const row = await this.prisma.mentorProfile.findUnique({
+      where: { id },
+      include: profileInclude,
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
   async create(input: CreateMentorProfileInput): Promise<MentorProfile> {
     const row = await this.prisma.mentorProfile.create({
       data: {

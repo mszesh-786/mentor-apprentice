@@ -44,6 +44,8 @@ describe('VerificationController (e2e)', () => {
 
   beforeEach(async () => {
     await prisma.analyticsEvent.deleteMany();
+    await prisma.booking.deleteMany();
+    await prisma.availabilityException.deleteMany();
     await prisma.userBlock.deleteMany();
     await prisma.availabilityRule.deleteMany();
     await prisma.verification.deleteMany();
@@ -57,6 +59,8 @@ describe('VerificationController (e2e)', () => {
 
   afterAll(async () => {
     await prisma.analyticsEvent.deleteMany();
+    await prisma.booking.deleteMany();
+    await prisma.availabilityException.deleteMany();
     await prisma.userBlock.deleteMany();
     await prisma.availabilityRule.deleteMany();
     await prisma.verification.deleteMany();

@@ -13,6 +13,7 @@ import { MentorProfile } from '../../domain/mentor-profile';
 import { MentorsRepository } from '../../persistence/mentors.repository';
 import { AvailabilityRule } from '../domain/availability-rule';
 import { AvailabilityRepository } from '../persistence/availability.repository';
+import { AvailabilityExceptionRepository } from '../persistence/availability-exception.repository';
 import { AvailabilityService } from './availability.service';
 
 describe('AvailabilityService', () => {
@@ -69,6 +70,16 @@ describe('AvailabilityService', () => {
       | 'countActiveByMentorProfileId'
     >
   >;
+  let availabilityExceptionRepository: jest.Mocked<
+    Pick<
+      AvailabilityExceptionRepository,
+      | 'findByMentorProfileId'
+      | 'findByMentorAndDateRange'
+      | 'create'
+      | 'findById'
+      | 'deleteById'
+    >
+  >;
   let mentorsRepository: jest.Mocked<Pick<MentorsRepository, 'findByUserId'>>;
   let service: AvailabilityService;
 
@@ -80,11 +91,19 @@ describe('AvailabilityService', () => {
       deleteById: jest.fn(),
       countActiveByMentorProfileId: jest.fn(),
     };
+    availabilityExceptionRepository = {
+      findByMentorProfileId: jest.fn(),
+      findByMentorAndDateRange: jest.fn(),
+      create: jest.fn(),
+      findById: jest.fn(),
+      deleteById: jest.fn(),
+    };
     mentorsRepository = {
       findByUserId: jest.fn(),
     };
     service = new AvailabilityService(
       availabilityRepository as unknown as AvailabilityRepository,
+      availabilityExceptionRepository as unknown as AvailabilityExceptionRepository,
       mentorsRepository as unknown as MentorsRepository,
     );
   });
