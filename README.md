@@ -70,6 +70,20 @@ Availability belongs to **MentorProfile**. Each rule stores a timezone (defaults
 
 `GET /mentors/me` includes `publicationEligibility` and `isBookable`. Only `VERIFIED` identity + active expertise + availability makes a **published** mentor bookable. No discovery or booking in this wave.
 
+### Apprentice + Discovery (Wave 7)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/apprentices/profile` | Create apprentice profile (also ensures APPRENTICE role; dual-role OK) |
+| GET | `/apprentices/me` | Read own apprentice profile |
+| PATCH | `/apprentices/me` | Update own apprentice profile |
+| POST | `/blocks` | Block a user `{ blockedUserId }` |
+| DELETE | `/blocks/:blockedUserId` | Unblock |
+| GET | `/discovery/mentors?skillId=` | Search bookable mentors (`languageId`, `teachingLevel` optional) |
+| GET | `/discovery/mentors/:profileId` | Public mentor detail |
+
+Discovery requires APPRENTICE role. Results only include ACTIVE + PUBLISHED + VERIFIED mentors with matching active expertise and availability. Blocked users are excluded. Search and profile views record analytics events (`SKILL_SEARCH`, `MENTOR_PROFILE_VIEW`). No booking in this wave.
+
 ## Scripts
 
 | Command | Description |

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { AuthUser } from '../auth/auth-user';
 import { UsersRepository } from './users.repository';
 import { EnsureUserInput, UserRecord } from './users.types';
@@ -35,5 +36,9 @@ export class UsersService {
 
   async findById(userId: string): Promise<UserRecord | null> {
     return this.usersRepository.findById(userId);
+  }
+
+  async ensureRole(userId: string, role: Role): Promise<UserRecord> {
+    return this.usersRepository.ensureRole(userId, role);
   }
 }

@@ -43,18 +43,24 @@ describe('AvailabilityController (e2e)', () => {
   });
 
   beforeEach(async () => {
+    await prisma.analyticsEvent.deleteMany();
+    await prisma.userBlock.deleteMany();
     await prisma.availabilityRule.deleteMany();
     await prisma.verification.deleteMany();
     await prisma.mentorExpertise.deleteMany();
     await prisma.mentorLanguage.deleteMany();
     await prisma.mentorProfile.deleteMany();
+    await prisma.apprenticeProfile.deleteMany();
     await prisma.userRole.deleteMany();
     await prisma.user.deleteMany();
   });
 
   afterAll(async () => {
+    await prisma.analyticsEvent.deleteMany();
+    await prisma.userBlock.deleteMany();
     await prisma.availabilityRule.deleteMany();
     await prisma.verification.deleteMany();
+    await prisma.apprenticeProfile.deleteMany();
     await prisma.userRole.deleteMany();
     await prisma.user.deleteMany();
     await app.close();

@@ -1,0 +1,40 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import type { AuthUser } from '../auth/auth-user';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { BlocksService } from './application/blocks.service';
+import { CreateBlockDto } from './dto/create-block.dto';
+
+@Controller('blocks')
+@UseGuards(JwtAuthGuard)
+export class BlocksController {
+  constructor(private readonly blocksService: BlocksService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async block(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateBlockDto,
+  ): Promise<{ blockedUserId: string }> {
+    await this.blocksService.blockUser(user, dto.blockedUserId);
+    return { blockedUserId: dto.blockedUserId };
+  }
+
+  @Delete(':blockedUserId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unblock(
+    @CurrentUser() user: AuthUser,
+    @Param('blockedUserId') blockedUserId: string,
+  ): Promise<void> {
+    await this.blocksService.unblockUser(user, blockedUserId);
+  }
+}

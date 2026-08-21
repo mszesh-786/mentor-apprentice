@@ -72,6 +72,22 @@ export class UsersRepository {
     });
   }
 
+  async ensureRole(userId: string, role: Role): Promise<UserRecord> {
+    await this.prisma.userRole.upsert({
+      where: {
+        userId_role: { userId, role },
+      },
+      create: { userId, role },
+      update: {},
+    });
+
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: { roles: true },
+    });
+    return this.toRecord(user);
+  }
+
   private toRecord(user: {
     id: string;
     authProviderId: string;
