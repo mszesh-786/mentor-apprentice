@@ -59,6 +59,8 @@ describe('MentorsController (e2e)', () => {
     await prisma.sessionSummary.deleteMany();
     await prisma.session.deleteMany();
     await prisma.booking.deleteMany();
+    await prisma.mentorshipGoal.deleteMany();
+    await prisma.mentorshipRelationship.deleteMany();
     await prisma.availabilityException.deleteMany();
     await prisma.userBlock.deleteMany();
     await prisma.availabilityRule.deleteMany();
@@ -76,6 +78,8 @@ describe('MentorsController (e2e)', () => {
     await prisma.sessionSummary.deleteMany();
     await prisma.session.deleteMany();
     await prisma.booking.deleteMany();
+    await prisma.mentorshipGoal.deleteMany();
+    await prisma.mentorshipRelationship.deleteMany();
     await prisma.availabilityException.deleteMany();
     await prisma.userBlock.deleteMany();
     await prisma.availabilityRule.deleteMany();

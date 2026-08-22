@@ -33,6 +33,7 @@ export class BookingsRepository {
     endAt: Date;
     timezoneSnapshot: string;
     apprenticeMessage?: string;
+    relationshipId?: string;
   }): Promise<Booking> {
     const row = await this.prisma.booking.create({
       data: {
@@ -43,6 +44,7 @@ export class BookingsRepository {
         endAt: input.endAt,
         timezoneSnapshot: input.timezoneSnapshot,
         apprenticeMessage: input.apprenticeMessage,
+        relationshipId: input.relationshipId,
         status: BookingStatus.REQUESTED,
       },
       include: bookingInclude,
@@ -259,6 +261,7 @@ export class BookingsRepository {
       mentorProfileId: row.mentorProfileId,
       apprenticeProfileId: row.apprenticeProfileId,
       skillId: row.skillId,
+      relationshipId: row.relationshipId,
       startAt: row.startAt,
       endAt: row.endAt,
       timezoneSnapshot: row.timezoneSnapshot,

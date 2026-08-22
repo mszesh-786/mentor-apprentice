@@ -5,6 +5,7 @@ import { AuthModule } from '../auth/auth.module';
 import { BlocksModule } from '../blocks/blocks.module';
 import { MentorsModule } from '../mentors/mentors.module';
 import { SessionsModule } from '../sessions/sessions.module';
+import { MentorshipsModule } from '../mentorships/mentorships.module';
 import { SkillsModule } from '../skills/skills.module';
 import { UsersModule } from '../users/users.module';
 import { VerificationModule } from '../verification/verification.module';
@@ -23,6 +24,7 @@ import { BookingsRepository } from './persistence/bookings.repository';
     BlocksModule,
     AnalyticsModule,
     forwardRef(() => SessionsModule),
+    forwardRef(() => MentorshipsModule),
   ],
   controllers: [BookingsController],
   providers: [BookingsService, BookingsRepository],

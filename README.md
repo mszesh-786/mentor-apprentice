@@ -119,7 +119,22 @@ Create body: `{ mentorProfileId, skillId, startAt (ISO UTC), durationMinutes: 15
 | POST | `/sessions/:id/report-technical-failure` | Tech fail → Session `FAILED` + Booking `CANCELLED` |
 | PUT | `/sessions/:id/summary` | Mentor upserts shared summary after completion |
 
-Join window via `SESSION_JOIN_OPEN_MINUTES_BEFORE` (default 15) and `SESSION_JOIN_CLOSE_MINUTES_AFTER_END` (default 30). Stub video only. Analytics: `SESSION_JOINED`, `SESSION_COMPLETED`, `SESSION_NO_SHOW`, `SESSION_TECH_FAILURE`, `SESSION_CANCELLED`. No feedback, mentorship, Stripe, WebRTC, or auto-complete.
+Join window via `SESSION_JOIN_OPEN_MINUTES_BEFORE` (default 15) and `SESSION_JOIN_CLOSE_MINUTES_AFTER_END` (default 30). Stub video only. Analytics: `SESSION_JOINED`, `SESSION_COMPLETED`, `SESSION_NO_SHOW`, `SESSION_TECH_FAILURE`, `SESSION_CANCELLED`. No feedback, Stripe, WebRTC, or auto-complete.
+
+### Mentorship (Wave 10)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/sessions/:id/continue` | After completed session: create/get ACTIVE relationship |
+| GET | `/mentorships/me` | List own relationships (`?status=`) |
+| GET | `/mentorships/:id` | Relationship detail (participants; history kept after end) |
+| GET | `/mentorships/:id/bookings` | Bookings linked to relationship |
+| GET | `/mentorships/:id/sessions` | Sessions under linked bookings |
+| POST | `/mentorships/:id/pause\|resume\|complete\|end` | Lifecycle |
+| PUT | `/mentorships/:id/goals` | Upsert active shared goal |
+| POST | `/mentorships/:id/goals/:goalId/achieve\|cancel` | Goal status |
+
+Continue body optional: `{ title?, description? }`. One ACTIVE relationship per mentor+apprentice+skill. Completed booking gets `relationshipId`. Later same-pair+skill bookings auto-attach only while ACTIVE. Block ends ACTIVE relationships. No feedback/payments.
 
 ## Scripts
 

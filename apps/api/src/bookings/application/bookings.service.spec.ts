@@ -18,6 +18,7 @@ import {
 } from '../../common/errors/domain-error';
 import { AvailabilityService } from '../../mentors/availability/application/availability.service';
 import { MentorsRepository } from '../../mentors/persistence/mentors.repository';
+import { MentorshipsService } from '../../mentorships/application/mentorships.service';
 import { SessionsService } from '../../sessions/application/sessions.service';
 import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
@@ -84,6 +85,7 @@ describe('BookingsService', () => {
     mentorProfileId: 'mentor-profile',
     apprenticeProfileId: 'apprentice-profile',
     skillId: 'skill-1',
+    relationshipId: null,
     startAt: new Date('2026-08-24T07:00:00.000Z'),
     endAt: new Date('2026-08-24T07:30:00.000Z'),
     timezoneSnapshot: 'Europe/Helsinki',
@@ -141,6 +143,9 @@ describe('BookingsService', () => {
     >
   >;
   let sessionsService: jest.Mocked<Pick<SessionsService, 'cancelForBooking'>>;
+  let mentorshipsService: jest.Mocked<
+    Pick<MentorshipsService, 'findActiveForPairSkill'>
+  >;
   let service: BookingsService;
 
   beforeEach(() => {
@@ -207,6 +212,9 @@ describe('BookingsService', () => {
     sessionsService = {
       cancelForBooking: jest.fn(),
     };
+    mentorshipsService = {
+      findActiveForPairSkill: jest.fn().mockResolvedValue(null),
+    };
 
     service = new BookingsService(
       bookingsRepository as unknown as BookingsRepository,
@@ -219,6 +227,7 @@ describe('BookingsService', () => {
       blocksService as unknown as BlocksService,
       analyticsService as unknown as AnalyticsService,
       sessionsService as unknown as SessionsService,
+      mentorshipsService as unknown as MentorshipsService,
     );
   });
 

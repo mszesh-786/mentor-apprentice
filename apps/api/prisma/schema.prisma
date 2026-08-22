@@ -88,6 +88,8 @@ model User {
   sessionsReported  Session[] @relation("SessionReportedBy")
   sessionSummariesCreated SessionSummary[] @relation("SessionSummaryCreatedBy")
   sessionSummariesUpdated SessionSummary[] @relation("SessionSummaryUpdatedBy")
+  mentorshipGoalsCreated MentorshipGoal[] @relation("MentorshipGoalCreatedBy")
+  mentorshipsEnded MentorshipRelationship[] @relation("MentorshipEndedBy")
 
   @@map("users")
 }
@@ -123,6 +125,7 @@ model MentorProfile {
   availabilityRules AvailabilityRule[]
   availabilityExceptions AvailabilityException[]
   bookings Booking[]
+  mentorships MentorshipRelationship[]
 
   @@map("mentor_profiles")
 }
@@ -180,6 +183,7 @@ model Skill {
   category  SkillCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   expertise MentorExpertise[]
   bookings  Booking[]
+  mentorships MentorshipRelationship[]
 
   @@map("skills")
 }
@@ -284,6 +288,7 @@ model ApprenticeProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings Booking[]
+  mentorships MentorshipRelationship[]
 
   @@map("apprentice_profiles")
 }
@@ -314,6 +319,12 @@ enum AnalyticsEventType {
   SESSION_NO_SHOW
   SESSION_TECH_FAILURE
   SESSION_CANCELLED
+  MENTORSHIP_CONTINUED
+  MENTORSHIP_PAUSED
+  MENTORSHIP_RESUMED
+  MENTORSHIP_COMPLETED
+  MENTORSHIP_ENDED
+  MENTORSHIP_GOAL_UPSERTED
 }
 
 model AnalyticsEvent {
@@ -344,6 +355,7 @@ model Booking {
   mentorProfileId     String
   apprenticeProfileId String
   skillId             String
+  relationshipId      String?
   startAt             DateTime
   endAt               DateTime
   timezoneSnapshot    String
@@ -355,14 +367,16 @@ model Booking {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  mentorProfile     MentorProfile     @relation(fields: [mentorProfileId], references: [id], onDelete: Restrict)
-  apprenticeProfile ApprenticeProfile @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
-  skill             Skill             @relation(fields: [skillId], references: [id], onDelete: Restrict)
-  cancelledBy       User?             @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  mentorProfile     MentorProfile            @relation(fields: [mentorProfileId], references: [id], onDelete: Restrict)
+  apprenticeProfile ApprenticeProfile        @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
+  skill             Skill                    @relation(fields: [skillId], references: [id], onDelete: Restrict)
+  cancelledBy       User?                    @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  relationship      MentorshipRelationship?  @relation(fields: [relationshipId], references: [id], onDelete: SetNull)
   session           Session?
 
   @@index([mentorProfileId, status, startAt])
   @@index([apprenticeProfileId, status, startAt])
+  @@index([relationshipId])
   @@map("bookings")
 }
 
@@ -424,4 +438,62 @@ model SessionSummary {
   updatedBy User?   @relation("SessionSummaryUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
   @@map("session_summaries")
+}
+
+enum MentorshipStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ENDED
+}
+
+enum MentorshipGoalStatus {
+  ACTIVE
+  ACHIEVED
+  CANCELLED
+}
+
+model MentorshipRelationship {
+  id                  String           @id @default(cuid())
+  mentorProfileId     String
+  apprenticeProfileId String
+  primarySkillId      String
+  status              MentorshipStatus @default(ACTIVE)
+  startedAt           DateTime         @default(now())
+  pausedAt            DateTime?
+  completedAt         DateTime?
+  endedAt             DateTime?
+  endedByUserId       String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  mentorProfile     MentorProfile     @relation(fields: [mentorProfileId], references: [id], onDelete: Restrict)
+  apprenticeProfile ApprenticeProfile @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
+  primarySkill      Skill             @relation(fields: [primarySkillId], references: [id], onDelete: Restrict)
+  endedBy           User?             @relation("MentorshipEndedBy", fields: [endedByUserId], references: [id], onDelete: SetNull)
+  goals             MentorshipGoal[]
+  bookings          Booking[]
+
+  @@index([mentorProfileId, status])
+  @@index([apprenticeProfileId, status])
+  @@index([mentorProfileId, apprenticeProfileId, primarySkillId, status])
+  @@map("mentorship_relationships")
+}
+
+model MentorshipGoal {
+  id              String               @id @default(cuid())
+  relationshipId  String
+  title           String
+  description     String?
+  status          MentorshipGoalStatus @default(ACTIVE)
+  createdByUserId String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  completedAt     DateTime?
+
+  relationship MentorshipRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  createdBy    User                   @relation("MentorshipGoalCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([relationshipId, status])
+  @@map("mentorship_goals")
 }

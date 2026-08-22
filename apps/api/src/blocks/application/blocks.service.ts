@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { UserStatus } from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import {
@@ -6,6 +11,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from '../../common/errors/domain-error';
+import { MentorshipsService } from '../../mentorships/application/mentorships.service';
 import { UsersService } from '../../users/users.service';
 import { BlocksRepository } from '../persistence/blocks.repository';
 
@@ -14,6 +20,8 @@ export class BlocksService {
   constructor(
     private readonly blocksRepository: BlocksRepository,
     private readonly usersService: UsersService,
+    @Inject(forwardRef(() => MentorshipsService))
+    private readonly mentorshipsService: MentorshipsService,
   ) {}
 
   async blockUser(user: AuthUser, blockedUserId: string): Promise<void> {
@@ -34,6 +42,11 @@ export class BlocksService {
     }
 
     await this.blocksRepository.create(user.id, blockedUserId);
+    await this.mentorshipsService.endActiveBetweenUsers(
+      user.id,
+      blockedUserId,
+      user.id,
+    );
   }
 
   async unblockUser(user: AuthUser, blockedUserId: string): Promise<void> {

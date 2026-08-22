@@ -10,6 +10,6 @@ import { SessionsController } from './sessions.controller';
   imports: [AuthModule, AnalyticsModule],
   controllers: [SessionsController, BookingsSessionsController],
   providers: [SessionsService, SessionsRepository],
-  exports: [SessionsService],
+  exports: [SessionsService, SessionsRepository],
 })
 export class SessionsModule {}

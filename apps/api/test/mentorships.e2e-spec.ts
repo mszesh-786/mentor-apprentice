@@ -2,11 +2,11 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
-  AnalyticsEventType,
   BookingStatus,
   CatalogueStatus,
   DayOfWeek,
   LanguageStatus,
+  MentorshipStatus,
   Role,
   SessionStatus,
   TeachingLevel,
@@ -18,7 +18,7 @@ import { AppModule } from '../src/app.module';
 import { DomainExceptionFilter } from '../src/common/errors/domain-exception.filter';
 import { PrismaService } from '../src/database/prisma.service';
 
-describe('Sessions (e2e)', () => {
+describe('Mentorships (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let jwtService: JwtService;
@@ -26,17 +26,25 @@ describe('Sessions (e2e)', () => {
   let skillId: string;
 
   const mentorToken = {
-    sub: 'e2e-session-mentor',
-    email: 'e2e-session-mentor@example.com',
-    displayName: 'Session Mentor',
+    sub: 'e2e-mentorship-mentor',
+    email: 'e2e-mentorship-mentor@example.com',
+    displayName: 'Mentorship Mentor',
     roles: [Role.MENTOR],
     emailVerified: true,
   };
 
   const apprenticeToken = {
-    sub: 'e2e-session-apprentice',
-    email: 'e2e-session-apprentice@example.com',
-    displayName: 'Session Apprentice',
+    sub: 'e2e-mentorship-apprentice',
+    email: 'e2e-mentorship-apprentice@example.com',
+    displayName: 'Mentorship Apprentice',
+    roles: [Role.APPRENTICE],
+    emailVerified: true,
+  };
+
+  const outsiderToken = {
+    sub: 'e2e-mentorship-outsider',
+    email: 'e2e-mentorship-outsider@example.com',
+    displayName: 'Outsider',
     roles: [Role.APPRENTICE],
     emailVerified: true,
   };
@@ -69,11 +77,11 @@ describe('Sessions (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await cleanSessionTables(prisma);
+    await cleanMentorshipTables(prisma);
   });
 
   afterAll(async () => {
-    await cleanSessionTables(prisma);
+    await cleanMentorshipTables(prisma);
     await app.close();
   });
 
@@ -81,9 +89,11 @@ describe('Sessions (e2e)', () => {
     return { Authorization: `Bearer ${jwtService.sign(payload)}` };
   }
 
-  async function acceptedBooking(): Promise<{
+  async function completedSessionFlow(): Promise<{
+    mentorProfileId: string;
     bookingId: string;
     sessionId: string;
+    mentorUserId: string;
   }> {
     const mentorProfileId = await publishBookableMentor(
       app,
@@ -109,144 +119,200 @@ describe('Sessions (e2e)', () => {
       })
       .expect(201);
 
+    const bookingId = (booking.body as { id: string }).id;
+
     await request(app.getHttpServer())
-      .post(`/bookings/${(booking.body as { id: string }).id}/accept`)
+      .post(`/bookings/${bookingId}/accept`)
       .set(auth(mentorToken))
       .expect(200);
 
     const session = await request(app.getHttpServer())
-      .get(`/bookings/${(booking.body as { id: string }).id}/session`)
+      .get(`/bookings/${bookingId}/session`)
       .set(auth(apprenticeToken))
       .expect(200);
 
+    const sessionId = (session.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/join`)
+      .set(auth(mentorToken))
+      .expect(200);
+    await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/join`)
+      .set(auth(apprenticeToken))
+      .expect(200);
+    await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/complete`)
+      .set(auth(mentorToken))
+      .expect(200);
+
+    const mentorUser = await prisma.user.findUniqueOrThrow({
+      where: { authProviderId: mentorToken.sub },
+    });
+
     return {
-      bookingId: (booking.body as { id: string }).id,
-      sessionId: (session.body as { id: string }).id,
+      mentorProfileId,
+      bookingId,
+      sessionId,
+      mentorUserId: mentorUser.id,
     };
   }
 
-  it('creates session on accept, joins, completes, and allows mentor summary', async () => {
-    const { bookingId, sessionId } = await acceptedBooking();
-
-    const created = await request(app.getHttpServer())
-      .get(`/sessions/${sessionId}`)
-      .set(auth(mentorToken))
-      .expect(200);
-
-    expect(created.body).toMatchObject({
-      status: SessionStatus.READY,
-      bookingId,
-      videoProvider: 'STUB',
-    });
-    expect((created.body as { joinUrl: string }).joinUrl).toContain('stub-');
+  it('enforces continue gates and links booking; auto-attaches future bookings', async () => {
+    const { mentorProfileId, bookingId, sessionId, mentorUserId } =
+      await completedSessionFlow();
 
     await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/complete`)
-      .set(auth(mentorToken))
-      .expect(409);
-
-    await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/join`)
-      .set(auth(mentorToken))
-      .expect(200);
-
-    await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/join`)
-      .set(auth(apprenticeToken))
-      .expect(200);
-
-    const completed = await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/complete`)
-      .set(auth(apprenticeToken))
-      .expect(200);
-
-    expect(completed.body).toMatchObject({
-      status: SessionStatus.COMPLETED,
-    });
-
-    const booking = await prisma.booking.findUniqueOrThrow({
-      where: { id: bookingId },
-    });
-    expect(booking.status).toBe(BookingStatus.COMPLETED);
-
-    await request(app.getHttpServer())
-      .put(`/sessions/${sessionId}/summary`)
-      .set(auth(apprenticeToken))
-      .send({ summary: 'Nope' })
+      .post(`/sessions/${sessionId}/continue`)
+      .set(auth(outsiderToken))
+      .send({})
       .expect(403);
 
-    const withSummary = await request(app.getHttpServer())
-      .put(`/sessions/${sessionId}/summary`)
-      .set(auth(mentorToken))
+    // recreate a READY session path: continue on completed is required —
+    // non-completed checked via a fresh accepted booking without complete
+    const secondBooking = await request(app.getHttpServer())
+      .post('/bookings')
+      .set(auth(apprenticeToken))
       .send({
-        summary: 'Covered oil changes',
-        nextStep: 'Practice filter swap',
+        mentorProfileId,
+        skillId,
+        startAt: '2026-08-24T07:30:00.000Z',
+        durationMinutes: 30,
       })
-      .expect(200);
-
-    expect(withSummary.body).toMatchObject({
-      summary: {
-        summary: 'Covered oil changes',
-        nextStep: 'Practice filter swap',
-      },
-    });
-
-    const events = await prisma.analyticsEvent.findMany({
-      where: {
-        type: {
-          in: [
-            AnalyticsEventType.SESSION_JOINED,
-            AnalyticsEventType.SESSION_COMPLETED,
-          ],
-        },
-      },
-    });
-    expect(events.length).toBeGreaterThanOrEqual(3);
-  });
-
-  it('marks no-show with absent participant', async () => {
-    const { bookingId, sessionId } = await acceptedBooking();
-
+      .expect(201);
     await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/join`)
+      .post(`/bookings/${(secondBooking.body as { id: string }).id}/accept`)
       .set(auth(mentorToken))
       .expect(200);
-
-    const noShow = await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/report-no-show`)
-      .set(auth(mentorToken))
-      .expect(200);
-
-    expect(noShow.body).toMatchObject({
-      status: SessionStatus.FAILED,
-      failureReason: 'NO_SHOW',
-    });
-    expect((noShow.body as { absentUserId: string }).absentUserId).toBeTruthy();
-
-    const bookingNoShow = await prisma.booking.findUniqueOrThrow({
-      where: { id: bookingId },
-    });
-    expect(bookingNoShow.status).toBe(BookingStatus.NO_SHOW);
-  });
-
-  it('terminates booking on technical failure', async () => {
-    const { bookingId, sessionId } = await acceptedBooking();
-
-    const failed = await request(app.getHttpServer())
-      .post(`/sessions/${sessionId}/report-technical-failure`)
+    const readySession = await request(app.getHttpServer())
+      .get(`/bookings/${(secondBooking.body as { id: string }).id}/session`)
       .set(auth(apprenticeToken))
       .expect(200);
 
-    expect(failed.body).toMatchObject({
-      status: SessionStatus.FAILED,
-      failureReason: 'TECHNICAL_FAILURE',
-    });
+    await request(app.getHttpServer())
+      .post(`/sessions/${(readySession.body as { id: string }).id}/continue`)
+      .set(auth(apprenticeToken))
+      .send({})
+      .expect(409);
 
-    const bookingFailed = await prisma.booking.findUniqueOrThrow({
+    const continued = await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/continue`)
+      .set(auth(apprenticeToken))
+      .send({ title: 'Routine maintenance confidence' })
+      .expect(201);
+
+    expect(continued.body).toMatchObject({
+      status: MentorshipStatus.ACTIVE,
+      primarySkillId: skillId,
+    });
+    const mentorshipId = (continued.body as { id: string }).id;
+
+    const linked = await prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
     });
-    expect(bookingFailed.status).toBe(BookingStatus.CANCELLED);
-    expect(bookingFailed.cancelReason).toBe('TECHNICAL_FAILURE');
+    expect(linked.relationshipId).toBe(mentorshipId);
+
+    const again = await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/continue`)
+      .set(auth(mentorToken))
+      .send({})
+      .expect(201);
+    expect((again.body as { id: string }).id).toBe(mentorshipId);
+
+    const nextBooking = await request(app.getHttpServer())
+      .post('/bookings')
+      .set(auth(apprenticeToken))
+      .send({
+        mentorProfileId,
+        skillId,
+        startAt: '2026-08-31T07:00:00.000Z',
+        durationMinutes: 30,
+      })
+      .expect(201);
+    expect(
+      (nextBooking.body as { relationshipId: string }).relationshipId,
+    ).toBe(mentorshipId);
+
+    await request(app.getHttpServer())
+      .post(`/mentorships/${mentorshipId}/pause`)
+      .set(auth(mentorToken))
+      .expect(200);
+
+    const pausedBooking = await request(app.getHttpServer())
+      .post('/bookings')
+      .set(auth(apprenticeToken))
+      .send({
+        mentorProfileId,
+        skillId,
+        startAt: '2026-08-31T07:30:00.000Z',
+        durationMinutes: 30,
+      })
+      .expect(201);
+    expect(
+      (pausedBooking.body as { relationshipId: string | null }).relationshipId,
+    ).toBeNull();
+
+    await request(app.getHttpServer())
+      .get(`/mentorships/${mentorshipId}`)
+      .set(auth(outsiderToken))
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .post(`/mentorships/${mentorshipId}/resume`)
+      .set(auth(apprenticeToken))
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/mentorships/${mentorshipId}/complete`)
+      .set(auth(mentorToken))
+      .expect(200);
+
+    const afterComplete = await request(app.getHttpServer())
+      .get(`/mentorships/${mentorshipId}`)
+      .set(auth(apprenticeToken))
+      .expect(200);
+    expect(afterComplete.body).toMatchObject({
+      status: MentorshipStatus.COMPLETED,
+    });
+
+    const history = await request(app.getHttpServer())
+      .get(`/mentorships/${mentorshipId}/bookings`)
+      .set(auth(apprenticeToken))
+      .expect(200);
+    expect((history.body as unknown[]).length).toBeGreaterThanOrEqual(1);
+
+    void mentorUserId;
+    void SessionStatus;
+    void BookingStatus;
+  });
+
+  it('block ends active relationship; history remains readable by participants', async () => {
+    const { sessionId, mentorUserId } = await completedSessionFlow();
+
+    const continued = await request(app.getHttpServer())
+      .post(`/sessions/${sessionId}/continue`)
+      .set(auth(apprenticeToken))
+      .send({})
+      .expect(201);
+    const mentorshipId = (continued.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post('/blocks')
+      .set(auth(apprenticeToken))
+      .send({ blockedUserId: mentorUserId })
+      .expect(201);
+
+    const ended = await request(app.getHttpServer())
+      .get(`/mentorships/${mentorshipId}`)
+      .set(auth(apprenticeToken))
+      .expect(200);
+
+    expect(ended.body).toMatchObject({ status: MentorshipStatus.ENDED });
+
+    await request(app.getHttpServer())
+      .get(`/mentorships/${mentorshipId}/sessions`)
+      .set(auth(mentorToken))
+      .expect(200);
   });
 });
 
@@ -260,9 +326,9 @@ async function publishBookableMentor(
     .post('/mentors/profile')
     .set(headers)
     .send({
-      displayName: 'Session Mentor',
-      headline: 'Session mentor',
-      biography: 'Experienced mentor for session tests',
+      displayName: 'Mentorship Mentor',
+      headline: 'Mentorship mentor',
+      biography: 'Experienced mentor for mentorship tests',
       timezone: 'Europe/Helsinki',
     })
     .expect(201);
@@ -316,7 +382,7 @@ async function publishBookableMentor(
   return (createRes.body as { id: string }).id;
 }
 
-async function cleanSessionTables(prisma: PrismaService): Promise<void> {
+async function cleanMentorshipTables(prisma: PrismaService): Promise<void> {
   await prisma.analyticsEvent.deleteMany();
   await prisma.sessionSummary.deleteMany();
   await prisma.session.deleteMany();

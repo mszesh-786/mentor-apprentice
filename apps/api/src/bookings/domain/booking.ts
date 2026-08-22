@@ -5,6 +5,7 @@ export type Booking = {
   mentorProfileId: string;
   apprenticeProfileId: string;
   skillId: string;
+  relationshipId: string | null;
   startAt: Date;
   endAt: Date;
   timezoneSnapshot: string;

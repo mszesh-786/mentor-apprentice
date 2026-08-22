@@ -31,6 +31,7 @@ import {
 } from '../../common/scheduling/scheduling';
 import { AvailabilityService } from '../../mentors/availability/application/availability.service';
 import { MentorsRepository } from '../../mentors/persistence/mentors.repository';
+import { MentorshipsService } from '../../mentorships/application/mentorships.service';
 import { SessionsService } from '../../sessions/application/sessions.service';
 import { SkillsService } from '../../skills/application/skills.service';
 import { UsersService } from '../../users/users.service';
@@ -53,6 +54,8 @@ export class BookingsService {
     private readonly analyticsService: AnalyticsService,
     @Inject(forwardRef(() => SessionsService))
     private readonly sessionsService: SessionsService,
+    @Inject(forwardRef(() => MentorshipsService))
+    private readonly mentorshipsService: MentorshipsService,
   ) {}
 
   async create(user: AuthUser, dto: CreateBookingDto): Promise<Booking> {
@@ -103,6 +106,13 @@ export class BookingsService {
     const timezone = mentor.timezone ?? 'UTC';
     await this.assertSlotAvailable(mentor.id, startAt, endAt, timezone);
 
+    const activeMentorship =
+      await this.mentorshipsService.findActiveForPairSkill(
+        mentor.id,
+        apprentice.id,
+        skill.id,
+      );
+
     const booking = await this.bookingsRepository.create({
       mentorProfileId: mentor.id,
       apprenticeProfileId: apprentice.id,
@@ -111,6 +121,7 @@ export class BookingsService {
       endAt,
       timezoneSnapshot: timezone,
       apprenticeMessage: dto.apprenticeMessage,
+      relationshipId: activeMentorship?.id,
     });
 
     await this.analyticsService.recordBookingRequested(user.id, {

@@ -8,6 +8,7 @@ export function toBookingResponse(booking: Booking): BookingResponseDto {
     apprenticeProfileId: booking.apprenticeProfileId,
     skillId: booking.skillId,
     skillName: booking.skillName,
+    relationshipId: booking.relationshipId,
     mentorDisplayName: booking.mentorDisplayName,
     apprenticeDisplayName: booking.apprenticeDisplayName,
     startAt: booking.startAt.toISOString(),

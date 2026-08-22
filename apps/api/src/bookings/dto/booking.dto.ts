@@ -33,6 +33,7 @@ export class BookingResponseDto {
   apprenticeProfileId!: string;
   skillId!: string;
   skillName!: string;
+  relationshipId!: string | null;
   mentorDisplayName!: string | null;
   apprenticeDisplayName!: string | null;
   startAt!: string;

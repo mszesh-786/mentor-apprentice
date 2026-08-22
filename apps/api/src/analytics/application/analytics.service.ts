@@ -139,4 +139,74 @@ export class AnalyticsService {
       payload,
     });
   }
+
+  async recordMentorshipContinued(
+    actorUserId: string,
+    payload: {
+      mentorshipId: string;
+      sessionId: string;
+      bookingId: string;
+    },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.MENTORSHIP_CONTINUED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordMentorshipPaused(
+    actorUserId: string,
+    payload: { mentorshipId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.MENTORSHIP_PAUSED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordMentorshipResumed(
+    actorUserId: string,
+    payload: { mentorshipId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.MENTORSHIP_RESUMED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordMentorshipCompleted(
+    actorUserId: string,
+    payload: { mentorshipId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.MENTORSHIP_COMPLETED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordMentorshipEnded(
+    actorUserId: string,
+    payload: { mentorshipId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.MENTORSHIP_ENDED,
+      actorUserId,
+      payload,
+    });
+  }
+
+  async recordMentorshipGoalUpserted(
+    actorUserId: string,
+    payload: { mentorshipId: string },
+  ): Promise<void> {
+    await this.analyticsRepository.create({
+      type: AnalyticsEventType.MENTORSHIP_GOAL_UPSERTED,
+      actorUserId,
+      payload,
+    });
+  }
 }
