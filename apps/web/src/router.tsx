@@ -19,12 +19,16 @@ import { MentorPublishPage } from '@/pages/mentor/publish-page'
 import { MentorBookingsPage } from '@/pages/mentor/bookings-page'
 import { MentorSessionsPage } from '@/pages/mentor/sessions-page'
 import { MentorSessionDetailPage } from '@/pages/mentor/session-detail-page'
+import { MentorMentorshipsPage } from '@/pages/mentor/mentorships-page'
+import { MentorMentorshipDetailPage } from '@/pages/mentor/mentorship-detail-page'
 import { ApprenticeProfilePage } from '@/pages/apprentice/profile-page'
 import { ApprenticeDiscoverPage } from '@/pages/apprentice/discover-page'
 import { ApprenticeMentorDetailPage } from '@/pages/apprentice/mentor-detail-page'
 import { ApprenticeBookingsPage } from '@/pages/apprentice/bookings-page'
 import { ApprenticeSessionsPage } from '@/pages/apprentice/sessions-page'
 import { ApprenticeSessionDetailPage } from '@/pages/apprentice/session-detail-page'
+import { ApprenticeMentorshipsPage } from '@/pages/apprentice/mentorships-page'
+import { ApprenticeMentorshipDetailPage } from '@/pages/apprentice/mentorship-detail-page'
 
 function RootLayout() {
   return (
@@ -228,6 +232,42 @@ const apprenticeSessionDetailRoute = createRoute({
   component: ApprenticeSessionDetailPage,
 })
 
+const mentorMentorshipsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/mentorships',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorMentorshipsPage,
+})
+
+const mentorMentorshipDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/mentorships/$mentorshipId',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorMentorshipDetailPage,
+})
+
+const apprenticeMentorshipsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/apprentice/mentorships',
+  beforeLoad: () => {
+    requireAuth('APPRENTICE')
+  },
+  component: ApprenticeMentorshipsPage,
+})
+
+const apprenticeMentorshipDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/apprentice/mentorships/$mentorshipId',
+  beforeLoad: () => {
+    requireAuth('APPRENTICE')
+  },
+  component: ApprenticeMentorshipDetailPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -241,6 +281,8 @@ const routeTree = rootRoute.addChildren([
   mentorBookingsRoute,
   mentorSessionsRoute,
   mentorSessionDetailRoute,
+  mentorMentorshipsRoute,
+  mentorMentorshipDetailRoute,
   apprenticeRoute,
   apprenticeProfileRoute,
   apprenticeDiscoverRoute,
@@ -248,6 +290,8 @@ const routeTree = rootRoute.addChildren([
   apprenticeBookingsRoute,
   apprenticeSessionsRoute,
   apprenticeSessionDetailRoute,
+  apprenticeMentorshipsRoute,
+  apprenticeMentorshipDetailRoute,
 ])
 
 export const router = createRouter({

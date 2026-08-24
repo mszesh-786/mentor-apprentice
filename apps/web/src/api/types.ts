@@ -305,3 +305,69 @@ export type UpsertSessionSummaryInput = {
   summary: string
   nextStep?: string
 }
+
+export type MentorshipStatus =
+  | 'ACTIVE'
+  | 'PAUSED'
+  | 'COMPLETED'
+  | 'ENDED'
+
+export type MentorshipGoalStatus = 'ACTIVE' | 'ACHIEVED' | 'CANCELLED'
+
+export type MentorshipGoal = {
+  id: string
+  title: string
+  description: string | null
+  status: MentorshipGoalStatus
+  createdByUserId: string
+  createdAt: string
+  updatedAt: string
+  completedAt: string | null
+}
+
+export type Mentorship = {
+  id: string
+  mentorProfileId: string
+  apprenticeProfileId: string
+  primarySkillId: string
+  primarySkillName: string
+  status: MentorshipStatus
+  startedAt: string
+  pausedAt: string | null
+  completedAt: string | null
+  endedAt: string | null
+  endedByUserId: string | null
+  mentorUserId: string
+  apprenticeUserId: string
+  mentorDisplayName: string | null
+  apprenticeDisplayName: string | null
+  createdAt: string
+  updatedAt: string
+  goals: MentorshipGoal[]
+}
+
+export type ContinueMentorshipInput = {
+  title?: string
+  description?: string
+}
+
+export type UpsertMentorshipGoalInput = {
+  title: string
+  description?: string
+}
+
+export type MentorshipBookingSummary = {
+  id: string
+  status: BookingStatus
+  startAt: string
+  endAt: string
+  skillId: string
+}
+
+export type MentorshipSessionSummary = {
+  id: string
+  bookingId: string
+  status: SessionStatus
+  startedAt: string | null
+  endedAt: string | null
+}

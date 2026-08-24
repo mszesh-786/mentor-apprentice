@@ -129,6 +129,12 @@ export function AppShell({
               >
                 Sessions
               </Link>
+              <Link
+                to="/mentor/mentorships"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Mentorships
+              </Link>
             </>
           ) : (
             <>
@@ -161,6 +167,12 @@ export function AppShell({
                 className="text-muted-foreground hover:text-foreground"
               >
                 Sessions
+              </Link>
+              <Link
+                to="/apprentice/mentorships"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Mentorships
               </Link>
             </>
           )}

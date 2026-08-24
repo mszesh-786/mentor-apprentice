@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { AppShell } from '@/components/app-shell'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useContinueFromSession } from '@/api/mentorships'
 import {
   useCompleteSession,
   useJoinSession,
@@ -30,6 +31,7 @@ export function SessionDetailPage({
   role: 'MENTOR' | 'APPRENTICE'
 }) {
   const base = role === 'MENTOR' ? '/mentor' : '/apprentice'
+  const navigate = useNavigate()
   const { sessionId } = useParams({
     from:
       role === 'MENTOR'
@@ -42,9 +44,12 @@ export function SessionDetailPage({
   const reportNoShow = useReportNoShow()
   const reportTech = useReportTechnicalFailure()
   const upsertSummary = useUpsertSessionSummary()
+  const continueMentorship = useContinueFromSession()
 
   const [summary, setSummary] = useState('')
   const [nextStep, setNextStep] = useState('')
+  const [continueTitle, setContinueTitle] = useState('')
+  const [continueDescription, setContinueDescription] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -92,6 +97,36 @@ export function SessionDetailPage({
         },
       }),
     )
+  }
+
+  async function onContinue(event: React.FormEvent) {
+    event.preventDefault()
+    if (!session) return
+    setMessage(null)
+    setError(null)
+    try {
+      const mentorship = await continueMentorship.mutateAsync({
+        sessionId: session.id,
+        body: {
+          title: continueTitle.trim() || undefined,
+          description: continueDescription.trim() || undefined,
+        },
+      })
+      setMessage('Mentorship continued')
+      if (isMentor) {
+        void navigate({
+          to: '/mentor/mentorships/$mentorshipId',
+          params: { mentorshipId: mentorship.id },
+        })
+      } else {
+        void navigate({
+          to: '/apprentice/mentorships/$mentorshipId',
+          params: { mentorshipId: mentorship.id },
+        })
+      }
+    } catch (err) {
+      setError(errorMessage(err))
+    }
   }
 
   return (
@@ -288,6 +323,54 @@ export function SessionDetailPage({
                       Next: {session.summary.nextStep}
                     </p>
                   ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {session.status === 'COMPLETED' ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Continue mentorship</CardTitle>
+                  <CardDescription>
+                    Start or reopen an ongoing relationship with an optional
+                    shared goal.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form className="space-y-4" onSubmit={onContinue}>
+                    <div className="space-y-2">
+                      <Label htmlFor="continueTitle">
+                        Goal title (optional)
+                      </Label>
+                      <Input
+                        id="continueTitle"
+                        value={continueTitle}
+                        onChange={(e) => setContinueTitle(e.target.value)}
+                        placeholder="Routine maintenance confidence"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="continueDescription">
+                        Goal description (optional)
+                      </Label>
+                      <Input
+                        id="continueDescription"
+                        value={continueDescription}
+                        onChange={(e) =>
+                          setContinueDescription(e.target.value)
+                        }
+                        placeholder="Build independence on common tasks"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={continueMentorship.isPending}
+                    >
+                      {continueMentorship.isPending
+                        ? 'Continuing…'
+                        : 'Continue with this mentor'}
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
             ) : null}

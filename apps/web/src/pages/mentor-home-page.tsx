@@ -156,6 +156,12 @@ export function MentorHomePage() {
                 <Link to="/mentor/sessions">Open</Link>
               </Button>
             </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <span className="text-sm font-medium">Mentorships</span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/mentor/mentorships">Open</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
