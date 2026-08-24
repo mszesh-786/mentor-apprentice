@@ -135,7 +135,8 @@ export class AnalyticsService {
   ): Promise<void> {
     await this.analyticsRepository.create({
       type: AnalyticsEventType.SESSION_CANCELLED,
-      actorUserId,
+      // Repository expects `string | undefined`, not `null`.
+      actorUserId: actorUserId ?? undefined,
       payload,
     });
   }
