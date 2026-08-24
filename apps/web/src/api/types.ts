@@ -148,3 +148,115 @@ export const TEACHING_LEVELS: TeachingLevel[] = [
   'INTERMEDIATE',
   'ADVANCED',
 ]
+
+export const BOOKING_DURATIONS = [15, 30, 60, 90] as const
+export type BookingDuration = (typeof BOOKING_DURATIONS)[number]
+
+export type BookingStatus =
+  | 'REQUESTED'
+  | 'ACCEPTED'
+  | 'CONFIRMED'
+  | 'COMPLETED'
+  | 'DECLINED'
+  | 'CANCELLED'
+  | 'NO_SHOW'
+
+export type ApprenticeProfile = {
+  id: string
+  userId: string
+  shortBio: string | null
+  generalLocation: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type ApprenticeProfileInput = {
+  shortBio?: string
+  generalLocation?: string | null
+}
+
+export type DiscoveryLanguage = {
+  id: string
+  code: string
+  name: string
+}
+
+export type DiscoveryExpertise = {
+  skillId: string
+  skillName: string
+  yearsExperience: number
+  teachingLevel: TeachingLevel
+  description: string | null
+}
+
+export type DiscoveryMentorCard = {
+  id: string
+  displayName: string
+  headline: string | null
+  generalLocation: string | null
+  languages: DiscoveryLanguage[]
+  expertise: DiscoveryExpertise
+  hourlyRate: string | null
+  currency: string | null
+  hasAvailability: boolean
+  identityVerified: true
+  matchReasons: string[]
+}
+
+export type DiscoveryMentorDetail = {
+  id: string
+  displayName: string
+  headline: string | null
+  biography: string | null
+  generalLocation: string | null
+  timezone: string | null
+  languages: DiscoveryLanguage[]
+  expertise: DiscoveryExpertise[]
+  identityVerified: true
+  availability: Array<{
+    dayOfWeek: string
+    startTime: string
+    endTime: string
+    timezone: string
+  }>
+  hourlyRate: string | null
+  currency: string | null
+}
+
+export type DiscoverySearchParams = {
+  skillId: string
+  languageId?: string
+  teachingLevel?: TeachingLevel
+}
+
+export type AvailabilitySlot = {
+  startAt: string
+  endAt: string
+}
+
+export type Booking = {
+  id: string
+  mentorProfileId: string
+  apprenticeProfileId: string
+  skillId: string
+  skillName: string
+  relationshipId: string | null
+  mentorDisplayName: string | null
+  apprenticeDisplayName: string | null
+  startAt: string
+  endAt: string
+  timezoneSnapshot: string
+  status: BookingStatus
+  apprenticeMessage: string | null
+  declineReason: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateBookingInput = {
+  mentorProfileId: string
+  skillId: string
+  startAt: string
+  durationMinutes: BookingDuration
+  apprenticeMessage?: string
+}

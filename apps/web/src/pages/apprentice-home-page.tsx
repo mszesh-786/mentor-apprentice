@@ -1,6 +1,8 @@
+import { Link } from '@tanstack/react-router'
 import { AppShell } from '@/components/app-shell'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -8,13 +10,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useAuthPing } from '@/api/health'
+import { useApprenticeProfile } from '@/api/apprentices'
+import { useMyBookings } from '@/api/bookings'
 import { useAuth } from '@/auth/auth-context'
 import { ApiError } from '@/api/client'
+import { errorMessage } from '@/lib/errors'
 
 export function ApprenticeHomePage() {
   const { session } = useAuth()
-  const ping = useAuthPing(Boolean(session))
+  const profileQuery = useApprenticeProfile()
+  const bookingsQuery = useMyBookings()
+  const profile = profileQuery.data
+  const openCount =
+    bookingsQuery.data?.filter(
+      (item) =>
+        item.status === 'REQUESTED' ||
+        item.status === 'ACCEPTED' ||
+        item.status === 'CONFIRMED',
+    ).length ?? 0
 
   return (
     <AppShell title="Apprentice">
@@ -24,7 +37,7 @@ export function ApprenticeHomePage() {
             Apprentice home
           </h1>
           <p className="text-muted-foreground">
-            F1 foundation. Discovery and booking land in F3.
+            Create a profile, discover mentors, and request bookings.
           </p>
         </div>
 
@@ -33,42 +46,65 @@ export function ApprenticeHomePage() {
             <CardTitle>Session</CardTitle>
             <CardDescription>Stub JWT identity</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{session?.email}</Badge>
-              <Badge>{session?.activeRole}</Badge>
-            </div>
-            <p className="text-muted-foreground break-all">sub: {session?.sub}</p>
+          <CardContent className="flex flex-wrap gap-2 text-sm">
+            <Badge variant="outline">{session?.email}</Badge>
+            <Badge>{session?.activeRole}</Badge>
+            {profile ? (
+              <Badge variant="secondary">Profile ready</Badge>
+            ) : (
+              <Badge variant="outline">No profile yet</Badge>
+            )}
+            <Badge variant="outline">{openCount} open booking(s)</Badge>
           </CardContent>
         </Card>
 
+        {profileQuery.isError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Could not load apprentice profile</AlertTitle>
+            <AlertDescription>
+              {profileQuery.error instanceof ApiError
+                ? profileQuery.error.message
+                : errorMessage(profileQuery.error)}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <Card>
           <CardHeader>
-            <CardTitle>API check</CardTitle>
-            <CardDescription>Authenticated GET /languages</CardDescription>
+            <CardTitle>Next steps</CardTitle>
           </CardHeader>
-          <CardContent>
-            {ping.isLoading ? (
-              <p className="text-sm text-muted-foreground">Checking…</p>
-            ) : null}
-            {ping.isSuccess ? (
-              <Alert>
-                <AlertTitle>Connected</AlertTitle>
-                <AlertDescription>
-                  API reachable at {ping.data.path}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            {ping.isError ? (
-              <Alert variant="destructive">
-                <AlertTitle>API unreachable</AlertTitle>
-                <AlertDescription>
-                  {ping.error instanceof ApiError
-                    ? ping.error.message
-                    : 'Start the API (`npm run dev:api`) and confirm VITE_API_URL / JWT secret.'}
-                </AlertDescription>
-              </Alert>
-            ) : null}
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Badge variant={profile ? 'default' : 'outline'}>
+                  {profile ? 'Done' : 'Todo'}
+                </Badge>
+                <span className="text-sm font-medium">Profile</span>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/apprentice/profile">Open</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Go</Badge>
+                <span className="text-sm font-medium">Discover mentors</span>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/apprentice/discover">Open</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Badge variant={openCount > 0 ? 'default' : 'outline'}>
+                  {openCount > 0 ? `${openCount} open` : 'None'}
+                </Badge>
+                <span className="text-sm font-medium">My bookings</span>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/apprentice/bookings">Open</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

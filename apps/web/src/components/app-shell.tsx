@@ -127,8 +127,24 @@ export function AppShell({
               >
                 Home
               </Link>
-              <span className="text-muted-foreground/60">Discover (F3)</span>
-              <span className="text-muted-foreground/60">Bookings (F3)</span>
+              <Link
+                to="/apprentice/profile"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Profile
+              </Link>
+              <Link
+                to="/apprentice/discover"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Discover
+              </Link>
+              <Link
+                to="/apprentice/bookings"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Bookings
+              </Link>
             </>
           )}
         </nav>

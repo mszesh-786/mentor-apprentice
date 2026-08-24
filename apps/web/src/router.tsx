@@ -16,6 +16,10 @@ import { MentorExpertisePage } from '@/pages/mentor/expertise-page'
 import { MentorVerificationPage } from '@/pages/mentor/verification-page'
 import { MentorAvailabilityPage } from '@/pages/mentor/availability-page'
 import { MentorPublishPage } from '@/pages/mentor/publish-page'
+import { ApprenticeProfilePage } from '@/pages/apprentice/profile-page'
+import { ApprenticeDiscoverPage } from '@/pages/apprentice/discover-page'
+import { ApprenticeMentorDetailPage } from '@/pages/apprentice/mentor-detail-page'
+import { ApprenticeBookingsPage } from '@/pages/apprentice/bookings-page'
 
 function RootLayout() {
   return (
@@ -138,6 +142,42 @@ const apprenticeRoute = createRoute({
   component: ApprenticeHomePage,
 })
 
+const apprenticeProfileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/apprentice/profile',
+  beforeLoad: () => {
+    requireAuth('APPRENTICE')
+  },
+  component: ApprenticeProfilePage,
+})
+
+const apprenticeDiscoverRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/apprentice/discover',
+  beforeLoad: () => {
+    requireAuth('APPRENTICE')
+  },
+  component: ApprenticeDiscoverPage,
+})
+
+const apprenticeMentorDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/apprentice/discover/$profileId',
+  beforeLoad: () => {
+    requireAuth('APPRENTICE')
+  },
+  component: ApprenticeMentorDetailPage,
+})
+
+const apprenticeBookingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/apprentice/bookings',
+  beforeLoad: () => {
+    requireAuth('APPRENTICE')
+  },
+  component: ApprenticeBookingsPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -149,6 +189,10 @@ const routeTree = rootRoute.addChildren([
   mentorAvailabilityRoute,
   mentorPublishRoute,
   apprenticeRoute,
+  apprenticeProfileRoute,
+  apprenticeDiscoverRoute,
+  apprenticeMentorDetailRoute,
+  apprenticeBookingsRoute,
 ])
 
 export const router = createRouter({
