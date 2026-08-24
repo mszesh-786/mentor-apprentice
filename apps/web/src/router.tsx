@@ -10,6 +10,12 @@ import { loadSession } from '@/auth/session'
 import { LoginPage } from '@/pages/login-page'
 import { MentorHomePage } from '@/pages/mentor-home-page'
 import { ApprenticeHomePage } from '@/pages/apprentice-home-page'
+import { MentorProfilePage } from '@/pages/mentor/profile-page'
+import { MentorLanguagesPage } from '@/pages/mentor/languages-page'
+import { MentorExpertisePage } from '@/pages/mentor/expertise-page'
+import { MentorVerificationPage } from '@/pages/mentor/verification-page'
+import { MentorAvailabilityPage } from '@/pages/mentor/availability-page'
+import { MentorPublishPage } from '@/pages/mentor/publish-page'
 
 function RootLayout() {
   return (
@@ -69,6 +75,60 @@ const mentorRoute = createRoute({
   component: MentorHomePage,
 })
 
+const mentorProfileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/profile',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorProfilePage,
+})
+
+const mentorLanguagesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/languages',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorLanguagesPage,
+})
+
+const mentorExpertiseRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/expertise',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorExpertisePage,
+})
+
+const mentorVerificationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/verification',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorVerificationPage,
+})
+
+const mentorAvailabilityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/availability',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorAvailabilityPage,
+})
+
+const mentorPublishRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mentor/publish',
+  beforeLoad: () => {
+    requireAuth('MENTOR')
+  },
+  component: MentorPublishPage,
+})
+
 const apprenticeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/apprentice',
@@ -82,6 +142,12 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   mentorRoute,
+  mentorProfileRoute,
+  mentorLanguagesRoute,
+  mentorExpertiseRoute,
+  mentorVerificationRoute,
+  mentorAvailabilityRoute,
+  mentorPublishRoute,
   apprenticeRoute,
 ])
 

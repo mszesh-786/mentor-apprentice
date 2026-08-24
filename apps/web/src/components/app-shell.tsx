@@ -81,7 +81,42 @@ export function AppShell({
               >
                 Home
               </Link>
-              <span className="text-muted-foreground/60">Profile (F2)</span>
+              <Link
+                to="/mentor/profile"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Profile
+              </Link>
+              <Link
+                to="/mentor/languages"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Languages
+              </Link>
+              <Link
+                to="/mentor/expertise"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Expertise
+              </Link>
+              <Link
+                to="/mentor/verification"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Verification
+              </Link>
+              <Link
+                to="/mentor/availability"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Availability
+              </Link>
+              <Link
+                to="/mentor/publish"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Publish
+              </Link>
               <span className="text-muted-foreground/60">Bookings (F4)</span>
             </>
           ) : (
