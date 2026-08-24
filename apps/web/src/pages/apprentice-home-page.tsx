@@ -105,6 +105,15 @@ export function ApprenticeHomePage() {
                 <Link to="/apprentice/bookings">Open</Link>
               </Button>
             </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Go</Badge>
+                <span className="text-sm font-medium">Sessions</span>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/apprentice/sessions">Open</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

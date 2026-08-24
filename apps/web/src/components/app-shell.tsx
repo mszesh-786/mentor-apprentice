@@ -117,7 +117,18 @@ export function AppShell({
               >
                 Publish
               </Link>
-              <span className="text-muted-foreground/60">Bookings (F4)</span>
+              <Link
+                to="/mentor/bookings"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Bookings
+              </Link>
+              <Link
+                to="/mentor/sessions"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Sessions
+              </Link>
             </>
           ) : (
             <>
@@ -144,6 +155,12 @@ export function AppShell({
                 className="text-muted-foreground hover:text-foreground"
               >
                 Bookings
+              </Link>
+              <Link
+                to="/apprentice/sessions"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Sessions
               </Link>
             </>
           )}

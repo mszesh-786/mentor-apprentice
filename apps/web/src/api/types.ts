@@ -260,3 +260,48 @@ export type CreateBookingInput = {
   durationMinutes: BookingDuration
   apprenticeMessage?: string
 }
+
+export type SessionStatus =
+  | 'READY'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+
+export type SessionFailureReason = 'NO_SHOW' | 'TECHNICAL_FAILURE'
+
+export type SessionSummary = {
+  id: string
+  summary: string
+  nextStep: string | null
+  createdByUserId: string
+  updatedByUserId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type MentoringSession = {
+  id: string
+  bookingId: string
+  status: SessionStatus
+  videoProvider: 'STUB' | string
+  externalRoomId: string
+  joinUrl: string
+  mentorJoinedAt: string | null
+  apprenticeJoinedAt: string | null
+  startedAt: string | null
+  endedAt: string | null
+  failureReason: SessionFailureReason | null
+  absentUserId: string | null
+  reportedByUserId: string | null
+  bookingStartAt: string
+  bookingEndAt: string
+  createdAt: string
+  updatedAt: string
+  summary: SessionSummary | null
+}
+
+export type UpsertSessionSummaryInput = {
+  summary: string
+  nextStep?: string
+}

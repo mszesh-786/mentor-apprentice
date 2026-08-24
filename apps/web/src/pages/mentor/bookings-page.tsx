@@ -11,13 +11,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useCancelBooking, useMyBookings } from '@/api/bookings'
+import {
+  useAcceptBooking,
+  useCancelBooking,
+  useDeclineBooking,
+  useMyBookings,
+} from '@/api/bookings'
 import { useSessionForBooking } from '@/api/sessions'
 import { formatWhen } from '@/lib/datetime'
 import { errorMessage } from '@/lib/errors'
 
 function BookingSessionLink({ bookingId }: { bookingId: string }) {
-  const sessionQuery = useSessionForBooking(bookingId, true)
+  const sessionQuery = useSessionForBooking(bookingId)
   if (sessionQuery.isLoading) {
     return <span className="text-sm text-muted-foreground">Session…</span>
   }
@@ -25,7 +30,7 @@ function BookingSessionLink({ bookingId }: { bookingId: string }) {
   return (
     <Button variant="secondary" size="sm" asChild>
       <Link
-        to="/apprentice/sessions/$sessionId"
+        to="/mentor/sessions/$sessionId"
         params={{ sessionId: sessionQuery.data.id }}
       >
         Open session
@@ -34,11 +39,39 @@ function BookingSessionLink({ bookingId }: { bookingId: string }) {
   )
 }
 
-export function ApprenticeBookingsPage() {
+export function MentorBookingsPage() {
   const bookingsQuery = useMyBookings()
+  const acceptBooking = useAcceptBooking()
+  const declineBooking = useDeclineBooking()
   const cancelBooking = useCancelBooking()
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const pending =
+    acceptBooking.isPending ||
+    declineBooking.isPending ||
+    cancelBooking.isPending
+
+  async function onAccept(id: string) {
+    setMessage(null)
+    setError(null)
+    try {
+      await acceptBooking.mutateAsync(id)
+      setMessage('Booking accepted — session is ready')
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+  }
+
+  async function onDecline(id: string) {
+    setMessage(null)
+    setError(null)
+    try {
+      await declineBooking.mutateAsync(id)
+      setMessage('Booking declined')
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+  }
 
   async function onCancel(id: string) {
     setMessage(null)
@@ -52,26 +85,23 @@ export function ApprenticeBookingsPage() {
   }
 
   return (
-    <AppShell title="Apprentice · Bookings">
+    <AppShell title="Mentor · Bookings">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              My bookings
+              Booking inbox
             </h1>
             <p className="text-muted-foreground">
-              Requests and upcoming sessions with mentors.
+              Accept requests to create a mentoring session.
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link to="/apprentice/sessions">Sessions</Link>
+              <Link to="/mentor/sessions">Sessions</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/apprentice/discover">Discover</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/apprentice">Back</Link>
+              <Link to="/mentor">Back</Link>
             </Button>
           </div>
         </div>
@@ -106,20 +136,16 @@ export function ApprenticeBookingsPage() {
           <Alert>
             <AlertTitle>No bookings yet</AlertTitle>
             <AlertDescription>
-              <Link to="/apprentice/discover" className="underline">
-                Discover mentors
-              </Link>{' '}
-              to request a session.
+              Requests from apprentices appear here.
             </AlertDescription>
           </Alert>
         ) : null}
 
         <div className="space-y-3">
           {(bookingsQuery.data ?? []).map((booking) => {
+            const isRequested = booking.status === 'REQUESTED'
             const canCancel =
-              booking.status === 'REQUESTED' ||
-              booking.status === 'ACCEPTED' ||
-              booking.status === 'CONFIRMED'
+              booking.status === 'ACCEPTED' || booking.status === 'CONFIRMED'
             const hasSession =
               booking.status === 'ACCEPTED' ||
               booking.status === 'CONFIRMED' ||
@@ -131,16 +157,13 @@ export function ApprenticeBookingsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <CardTitle className="text-lg">
-                        {booking.mentorDisplayName ?? 'Mentor'}
+                        {booking.apprenticeDisplayName ?? 'Apprentice'}
                       </CardTitle>
                       <CardDescription>{booking.skillName}</CardDescription>
                     </div>
                     <Badge
                       variant={
-                        booking.status === 'CANCELLED' ||
-                        booking.status === 'DECLINED'
-                          ? 'outline'
-                          : 'default'
+                        booking.status === 'REQUESTED' ? 'default' : 'outline'
                       }
                     >
                       {booking.status}
@@ -152,18 +175,34 @@ export function ApprenticeBookingsPage() {
                     {formatWhen(booking.startAt, booking.timezoneSnapshot)} →{' '}
                     {formatWhen(booking.endAt, booking.timezoneSnapshot)}
                   </p>
-                  <p className="text-muted-foreground">
-                    TZ: {booking.timezoneSnapshot}
-                  </p>
                   {booking.apprenticeMessage ? (
                     <p>Message: {booking.apprenticeMessage}</p>
                   ) : null}
                   <div className="flex flex-wrap gap-2">
+                    {isRequested ? (
+                      <>
+                        <Button
+                          size="sm"
+                          disabled={pending}
+                          onClick={() => void onAccept(booking.id)}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={pending}
+                          onClick={() => void onDecline(booking.id)}
+                        >
+                          Decline
+                        </Button>
+                      </>
+                    ) : null}
                     {canCancel ? (
                       <Button
-                        variant="outline"
                         size="sm"
-                        disabled={cancelBooking.isPending}
+                        variant="outline"
+                        disabled={pending}
                         onClick={() => void onCancel(booking.id)}
                       >
                         Cancel

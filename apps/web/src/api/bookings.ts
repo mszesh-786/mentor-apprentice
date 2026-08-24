@@ -52,6 +52,7 @@ export function useAcceptBooking() {
       apiFetch<Booking>(`/bookings/${bookingId}/accept`, { method: 'POST' }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['bookings'] })
+      void qc.invalidateQueries({ queryKey: ['sessions'] })
     },
   })
 }
@@ -63,6 +64,7 @@ export function useDeclineBooking() {
       apiFetch<Booking>(`/bookings/${bookingId}/decline`, { method: 'POST' }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['bookings'] })
+      void qc.invalidateQueries({ queryKey: ['sessions'] })
     },
   })
 }

@@ -136,6 +136,29 @@ export function MentorHomePage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Operations</CardTitle>
+            <CardDescription>
+              Accept bookings, then join and complete sessions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <span className="text-sm font-medium">Booking inbox</span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/mentor/bookings">Open</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+              <span className="text-sm font-medium">Sessions</span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/mentor/sessions">Open</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {profile?.publicationEligibility ? (
           <Card>
             <CardHeader>
