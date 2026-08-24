@@ -28,6 +28,17 @@ npm run dev:api   # http://localhost:3000
 npm run dev:web   # http://localhost:5173
 ```
 
+### Web (F1 foundation)
+
+Vite + TanStack Router + TanStack Query + minimal shadcn/ui.
+
+```bash
+cp apps/web/.env.example apps/web/.env
+# VITE_JWT_SECRET must match apps/api JWT_SECRET
+```
+
+Stub login at `/login` mints a local HS256 JWT (mentor / apprentice / dual). Role switcher in the shell for dual users. Domain screens start in F2+.
+
 ### Mentor profile (Wave 1)
 
 Authenticated mentor JWT (HS256 stub):
