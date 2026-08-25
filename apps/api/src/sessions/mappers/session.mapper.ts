@@ -3,6 +3,7 @@ import { SessionResponseDto } from '../dto/session.dto';
 
 export function toSessionResponse(
   session: MentoringSession,
+  options?: { myFeedbackSubmitted?: boolean },
 ): SessionResponseDto {
   return {
     id: session.id,
@@ -33,5 +34,6 @@ export function toSessionResponse(
           updatedAt: session.summary.updatedAt.toISOString(),
         }
       : null,
+    myFeedbackSubmitted: options?.myFeedbackSubmitted ?? false,
   };
 }

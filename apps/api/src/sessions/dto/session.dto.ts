@@ -46,6 +46,7 @@ export class SessionResponseDto {
   createdAt!: string;
   updatedAt!: string;
   summary!: SessionSummaryResponseDto | null;
+  myFeedbackSubmitted!: boolean;
 }
 
 export class JoinSessionResponseDto extends SessionResponseDto {}

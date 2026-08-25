@@ -13,6 +13,7 @@ import { VerificationModule } from './verification/verification.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { MentorshipsModule } from './mentorships/mentorships.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MentorshipsModule } from './mentorships/mentorships.module';
     BookingsModule,
     SessionsModule,
     MentorshipsModule,
+    FeedbackModule,
   ],
 })
 export class AppModule {}

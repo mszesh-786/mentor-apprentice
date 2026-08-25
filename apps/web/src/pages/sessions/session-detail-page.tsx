@@ -13,6 +13,14 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useSubmitSessionFeedback } from '@/api/feedback'
 import { useContinueFromSession } from '@/api/mentorships'
 import {
   useCompleteSession,
@@ -45,9 +53,24 @@ export function SessionDetailPage({
   const reportTech = useReportTechnicalFailure()
   const upsertSummary = useUpsertSessionSummary()
   const continueMentorship = useContinueFromSession()
+  const submitFeedback = useSubmitSessionFeedback()
 
   const [summary, setSummary] = useState('')
   const [nextStep, setNextStep] = useState('')
+  const [wasUseful, setWasUseful] = useState<boolean | null>(null)
+  const [explanationsClear, setExplanationsClear] = useState<boolean | null>(
+    null,
+  )
+  const [progressMade, setProgressMade] = useState<boolean | null>(null)
+  const [wouldBookAgain, setWouldBookAgain] = useState<boolean | null>(null)
+  const [apprenticeRespectful, setApprenticeRespectful] = useState<
+    boolean | null
+  >(null)
+  const [learningGoalClear, setLearningGoalClear] = useState<boolean | null>(
+    null,
+  )
+  const [wouldMentorAgain, setWouldMentorAgain] = useState<boolean | null>(null)
+  const [feedbackComment, setFeedbackComment] = useState('')
   const [continueTitle, setContinueTitle] = useState('')
   const [continueDescription, setContinueDescription] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -97,6 +120,57 @@ export function SessionDetailPage({
         },
       }),
     )
+  }
+
+  async function onSubmitFeedback(event: React.FormEvent) {
+    event.preventDefault()
+    if (!session) return
+    setMessage(null)
+    setError(null)
+    try {
+      if (isMentor) {
+        if (
+          apprenticeRespectful === null ||
+          learningGoalClear === null ||
+          wouldMentorAgain === null
+        ) {
+          setError('Answer all feedback questions')
+          return
+        }
+        await submitFeedback.mutateAsync({
+          sessionId: session.id,
+          body: {
+            apprenticeRespectful,
+            learningGoalClear,
+            wouldMentorAgain,
+            comment: feedbackComment.trim() || undefined,
+          },
+        })
+      } else {
+        if (
+          wasUseful === null ||
+          explanationsClear === null ||
+          progressMade === null ||
+          wouldBookAgain === null
+        ) {
+          setError('Answer all feedback questions')
+          return
+        }
+        await submitFeedback.mutateAsync({
+          sessionId: session.id,
+          body: {
+            wasUseful,
+            explanationsClear,
+            progressMade,
+            wouldBookAgain,
+            comment: feedbackComment.trim() || undefined,
+          },
+        })
+      }
+      setMessage('Feedback submitted')
+    } catch (err) {
+      setError(errorMessage(err))
+    }
   }
 
   async function onContinue(event: React.FormEvent) {
@@ -330,6 +404,95 @@ export function SessionDetailPage({
             {session.status === 'COMPLETED' ? (
               <Card>
                 <CardHeader>
+                  <CardTitle>Session feedback</CardTitle>
+                  <CardDescription>
+                    Lightweight reflection on this session (once per person).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {session.myFeedbackSubmitted ? (
+                    <Alert>
+                      <AlertTitle>Thanks</AlertTitle>
+                      <AlertDescription>
+                        Your feedback for this session is recorded.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <form className="space-y-4" onSubmit={onSubmitFeedback}>
+                      {isMentor ? (
+                        <>
+                          <YesNoField
+                            id="apprenticeRespectful"
+                            label="Was the apprentice respectful?"
+                            value={apprenticeRespectful}
+                            onChange={setApprenticeRespectful}
+                          />
+                          <YesNoField
+                            id="learningGoalClear"
+                            label="Was the learning goal clear?"
+                            value={learningGoalClear}
+                            onChange={setLearningGoalClear}
+                          />
+                          <YesNoField
+                            id="wouldMentorAgain"
+                            label="Would you mentor this apprentice again?"
+                            value={wouldMentorAgain}
+                            onChange={setWouldMentorAgain}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <YesNoField
+                            id="wasUseful"
+                            label="Was the session useful?"
+                            value={wasUseful}
+                            onChange={setWasUseful}
+                          />
+                          <YesNoField
+                            id="explanationsClear"
+                            label="Were explanations clear?"
+                            value={explanationsClear}
+                            onChange={setExplanationsClear}
+                          />
+                          <YesNoField
+                            id="progressMade"
+                            label="Did you make progress toward your goal?"
+                            value={progressMade}
+                            onChange={setProgressMade}
+                          />
+                          <YesNoField
+                            id="wouldBookAgain"
+                            label="Would you book this mentor again?"
+                            value={wouldBookAgain}
+                            onChange={setWouldBookAgain}
+                          />
+                        </>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="feedbackComment">
+                          Comment (optional)
+                        </Label>
+                        <Input
+                          id="feedbackComment"
+                          value={feedbackComment}
+                          onChange={(e) => setFeedbackComment(e.target.value)}
+                          placeholder="Anything else to share?"
+                        />
+                      </div>
+                      <Button type="submit" disabled={submitFeedback.isPending}>
+                        {submitFeedback.isPending
+                          ? 'Submitting…'
+                          : 'Submit feedback'}
+                      </Button>
+                    </form>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {session.status === 'COMPLETED' ? (
+              <Card>
+                <CardHeader>
                   <CardTitle>Continue mentorship</CardTitle>
                   <CardDescription>
                     Start or reopen an ongoing relationship with an optional
@@ -378,5 +541,35 @@ export function SessionDetailPage({
         ) : null}
       </div>
     </AppShell>
+  )
+}
+
+function YesNoField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: boolean | null
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select
+        value={value === null ? '' : value ? 'yes' : 'no'}
+        onValueChange={(next) => onChange(next === 'yes')}
+      >
+        <SelectTrigger id={id}>
+          <SelectValue placeholder="Select yes or no" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="yes">Yes</SelectItem>
+          <SelectItem value="no">No</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   )
 }

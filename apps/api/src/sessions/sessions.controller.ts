@@ -13,6 +13,7 @@ import {
 import type { AuthUser } from '../auth/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { FeedbackService } from '../feedback/application/feedback.service';
 import { SessionsService } from './application/sessions.service';
 import {
   JoinSessionResponseDto,
@@ -24,7 +25,10 @@ import { toSessionResponse } from './mappers/session.mapper';
 @Controller('sessions')
 @UseGuards(JwtAuthGuard)
 export class SessionsController {
-  constructor(private readonly sessionsService: SessionsService) {}
+  constructor(
+    private readonly sessionsService: SessionsService,
+    private readonly feedbackService: FeedbackService,
+  ) {}
 
   @Get('me')
   async listMine(
@@ -36,7 +40,15 @@ export class SessionsController {
     const sessions = await this.sessionsService.listMine(user, {
       upcoming: parsed,
     });
-    return sessions.map(toSessionResponse);
+    const submitted = await this.feedbackService.findSubmittedSessionIds(
+      user.id,
+      sessions.map((session) => session.id),
+    );
+    return sessions.map((session) =>
+      toSessionResponse(session, {
+        myFeedbackSubmitted: submitted.has(session.id),
+      }),
+    );
   }
 
   @Get(':id')
@@ -45,7 +57,11 @@ export class SessionsController {
     @Param('id') id: string,
   ): Promise<SessionResponseDto> {
     const session = await this.sessionsService.getById(user, id);
-    return toSessionResponse(session);
+    const myFeedbackSubmitted = await this.feedbackService.hasSubmitted(
+      user.id,
+      id,
+    );
+    return toSessionResponse(session, { myFeedbackSubmitted });
   }
 
   @Post(':id/join')

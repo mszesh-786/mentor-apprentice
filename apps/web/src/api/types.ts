@@ -299,6 +299,7 @@ export type MentoringSession = {
   createdAt: string
   updatedAt: string
   summary: SessionSummary | null
+  myFeedbackSubmitted: boolean
 }
 
 export type UpsertSessionSummaryInput = {
@@ -370,4 +371,50 @@ export type MentorshipSessionSummary = {
   status: SessionStatus
   startedAt: string | null
   endedAt: string | null
+}
+
+export type SessionFeedbackRole = 'MENTOR' | 'APPRENTICE'
+
+export type SessionFeedback = {
+  id: string
+  sessionId: string
+  authorUserId: string
+  role: SessionFeedbackRole
+  wasUseful: boolean | null
+  explanationsClear: boolean | null
+  progressMade: boolean | null
+  wouldBookAgain: boolean | null
+  apprenticeRespectful: boolean | null
+  learningGoalClear: boolean | null
+  wouldMentorAgain: boolean | null
+  comment: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SubmitApprenticeSessionFeedbackInput = {
+  wasUseful: boolean
+  explanationsClear: boolean
+  progressMade: boolean
+  wouldBookAgain: boolean
+  comment?: string
+}
+
+export type SubmitMentorSessionFeedbackInput = {
+  apprenticeRespectful: boolean
+  learningGoalClear: boolean
+  wouldMentorAgain: boolean
+  comment?: string
+}
+
+export type ProductFeedbackCategory =
+  | 'CONFUSING'
+  | 'MISSING'
+  | 'DIFFICULT'
+  | 'GENERAL'
+
+export type SubmitProductFeedbackInput = {
+  category: ProductFeedbackCategory
+  message: string
+  pageContext?: string
 }

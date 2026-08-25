@@ -147,6 +147,16 @@ Join window via `SESSION_JOIN_OPEN_MINUTES_BEFORE` (default 15) and `SESSION_JOI
 
 Continue body optional: `{ title?, description? }`. One ACTIVE relationship per mentor+apprentice+skill. Completed booking gets `relationshipId`. Later same-pair+skill bookings auto-attach only while ACTIVE. Block ends ACTIVE relationships. No feedback/payments.
 
+### Feedback (Wave 11)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/sessions/:id/feedback` | Submit session feedback (participants; COMPLETED only) |
+| GET | `/sessions/:id/feedback/me` | Own submission for session |
+| POST | `/feedback/product` | Platform usability feedback |
+
+Session feedback: one submission per participant. Apprentice fields: useful, clear, progress, book again. Mentor fields: respectful, goal clear, mentor again. Optional comment. `GET /sessions/:id` includes `myFeedbackSubmitted`. Product feedback separate from interpersonal feedback.
+
 ## Scripts
 
 | Command | Description |

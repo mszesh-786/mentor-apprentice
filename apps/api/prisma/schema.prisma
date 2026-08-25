@@ -90,6 +90,8 @@ model User {
   sessionSummariesUpdated SessionSummary[] @relation("SessionSummaryUpdatedBy")
   mentorshipGoalsCreated MentorshipGoal[] @relation("MentorshipGoalCreatedBy")
   mentorshipsEnded MentorshipRelationship[] @relation("MentorshipEndedBy")
+  sessionFeedbackAuthored SessionFeedback[] @relation("SessionFeedbackAuthor")
+  productFeedback ProductFeedback[]
 
   @@map("users")
 }
@@ -418,9 +420,60 @@ model Session {
   absentUser User?           @relation("SessionAbsentUser", fields: [absentUserId], references: [id], onDelete: SetNull)
   reportedBy User?           @relation("SessionReportedBy", fields: [reportedByUserId], references: [id], onDelete: SetNull)
   summary    SessionSummary?
+  feedback   SessionFeedback[]
 
   @@index([status, createdAt])
   @@map("sessions")
+}
+
+enum SessionFeedbackRole {
+  MENTOR
+  APPRENTICE
+}
+
+enum ProductFeedbackCategory {
+  CONFUSING
+  MISSING
+  DIFFICULT
+  GENERAL
+}
+
+model SessionFeedback {
+  id                   String              @id @default(cuid())
+  sessionId            String
+  authorUserId         String
+  role                 SessionFeedbackRole
+  wasUseful            Boolean?
+  explanationsClear    Boolean?
+  progressMade         Boolean?
+  wouldBookAgain       Boolean?
+  apprenticeRespectful Boolean?
+  learningGoalClear    Boolean?
+  wouldMentorAgain     Boolean?
+  comment              String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author  User    @relation("SessionFeedbackAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, authorUserId])
+  @@index([sessionId])
+  @@map("session_feedback")
+}
+
+model ProductFeedback {
+  id          String                  @id @default(cuid())
+  userId      String
+  category    ProductFeedbackCategory @default(GENERAL)
+  message     String
+  pageContext String?
+  createdAt   DateTime                @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("product_feedback")
 }
 
 model SessionSummary {

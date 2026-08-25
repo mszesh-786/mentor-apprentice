@@ -176,6 +176,12 @@ export function AppShell({
               </Link>
             </>
           )}
+          <Link
+            to="/feedback"
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          >
+            Help us improve
+          </Link>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
