@@ -182,6 +182,7 @@ export class DiscoveryRepository {
 
     return {
       id: row.id,
+      userId: row.userId,
       displayName: row.user.displayName?.trim() || 'Mentor',
       headline: row.headline,
       biography: row.biography,

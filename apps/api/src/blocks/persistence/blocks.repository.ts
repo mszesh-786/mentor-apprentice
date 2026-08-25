@@ -49,4 +49,25 @@ export class BlocksRepository {
     });
     return row !== null;
   }
+
+  async listForBlocker(blockerUserId: string): Promise<
+    Array<{
+      blockedUserId: string;
+      blockedDisplayName: string | null;
+      createdAt: Date;
+    }>
+  > {
+    const rows = await this.prisma.userBlock.findMany({
+      where: { blockerUserId },
+      include: {
+        blocked: { select: { displayName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((row) => ({
+      blockedUserId: row.blockedUserId,
+      blockedDisplayName: row.blocked.displayName,
+      createdAt: row.createdAt,
+    }));
+  }
 }

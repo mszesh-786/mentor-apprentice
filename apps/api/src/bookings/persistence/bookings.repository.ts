@@ -238,6 +238,31 @@ export class BookingsRepository {
     });
   }
 
+  async findOpenBetweenUsers(
+    userAId: string,
+    userBId: string,
+  ): Promise<Booking[]> {
+    const rows = await this.prisma.booking.findMany({
+      where: {
+        status: {
+          in: [BookingStatus.REQUESTED, BookingStatus.ACCEPTED],
+        },
+        OR: [
+          {
+            mentorProfile: { userId: userAId },
+            apprenticeProfile: { userId: userBId },
+          },
+          {
+            mentorProfile: { userId: userBId },
+            apprenticeProfile: { userId: userAId },
+          },
+        ],
+      },
+      include: bookingInclude,
+    });
+    return rows.map((row) => this.toDomain(row));
+  }
+
   async updateStatus(
     id: string,
     data: {

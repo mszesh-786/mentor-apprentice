@@ -182,6 +182,12 @@ export function AppShell({
           >
             Help us improve
           </Link>
+          <Link
+            to="/blocks"
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Blocked
+          </Link>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

@@ -282,6 +282,7 @@ describe('Discovery (e2e)', () => {
         }),
       ],
     });
+    expect((detailRes.body as { userId: string }).userId).toBeTruthy();
     expect(
       (detailRes.body as { availability: unknown[] }).availability.length,
     ).toBeGreaterThan(0);

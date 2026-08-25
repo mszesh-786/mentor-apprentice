@@ -50,6 +50,7 @@ export class BookingsService {
     private readonly skillsService: SkillsService,
     private readonly usersService: UsersService,
     private readonly verificationService: VerificationService,
+    @Inject(forwardRef(() => BlocksService))
     private readonly blocksService: BlocksService,
     private readonly analyticsService: AnalyticsService,
     @Inject(forwardRef(() => SessionsService))
@@ -201,6 +202,30 @@ export class BookingsService {
     });
 
     return declined;
+  }
+
+  async cancelOpenBetweenUsers(
+    actorUserId: string,
+    userAId: string,
+    userBId: string,
+  ): Promise<void> {
+    const open = await this.bookingsRepository.findOpenBetweenUsers(
+      userAId,
+      userBId,
+    );
+    for (const booking of open) {
+      await this.bookingsRepository.updateStatus(booking.id, {
+        status: BookingStatus.CANCELLED,
+        cancelledByUserId: actorUserId,
+        cancelReason: 'USER_BLOCKED',
+      });
+      if (booking.status === BookingStatus.ACCEPTED) {
+        await this.sessionsService.cancelForBooking(booking.id);
+      }
+      await this.analyticsService.recordBookingCancelled(actorUserId, {
+        bookingId: booking.id,
+      });
+    }
   }
 
   async cancel(user: AuthUser, bookingId: string): Promise<Booking> {

@@ -21,7 +21,7 @@ import { BookingsRepository } from './persistence/bookings.repository';
     MentorsModule,
     SkillsModule,
     VerificationModule,
-    BlocksModule,
+    forwardRef(() => BlocksModule),
     AnalyticsModule,
     forwardRef(() => SessionsModule),
     forwardRef(() => MentorshipsModule),

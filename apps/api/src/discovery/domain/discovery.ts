@@ -29,6 +29,7 @@ export type DiscoveryMentorCard = {
 
 export type DiscoveryMentorDetail = {
   id: string;
+  userId: string;
   displayName: string;
   headline: string | null;
   biography: string | null;

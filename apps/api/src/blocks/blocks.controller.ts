@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -14,10 +15,28 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { BlocksService } from './application/blocks.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 
+export class BlockEntryResponseDto {
+  blockedUserId!: string;
+  blockedDisplayName!: string | null;
+  createdAt!: string;
+}
+
 @Controller('blocks')
 @UseGuards(JwtAuthGuard)
 export class BlocksController {
   constructor(private readonly blocksService: BlocksService) {}
+
+  @Get('me')
+  async listMine(
+    @CurrentUser() user: AuthUser,
+  ): Promise<BlockEntryResponseDto[]> {
+    const rows = await this.blocksService.listMine(user);
+    return rows.map((row) => ({
+      blockedUserId: row.blockedUserId,
+      blockedDisplayName: row.blockedDisplayName,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useBlockUser } from '@/api/blocks'
 import {
   useAchieveMentorshipGoal,
   useCancelMentorshipGoal,
@@ -51,6 +52,7 @@ export function MentorshipDetailPage({
   const upsertGoal = useUpsertMentorshipGoal()
   const achieveGoal = useAchieveMentorshipGoal()
   const cancelGoal = useCancelMentorshipGoal()
+  const blockUser = useBlockUser()
 
   const [goalTitle, setGoalTitle] = useState('')
   const [goalDescription, setGoalDescription] = useState('')
@@ -59,6 +61,9 @@ export function MentorshipDetailPage({
 
   const mentorship = mentorshipQuery.data
   const activeGoal = mentorship?.goals.find((g) => g.status === 'ACTIVE')
+  const counterpartUserId = isMentor
+    ? mentorship?.apprenticeUserId
+    : mentorship?.mentorUserId
 
   useEffect(() => {
     if (!activeGoal) return
@@ -73,7 +78,8 @@ export function MentorshipDetailPage({
     end.isPending ||
     upsertGoal.isPending ||
     achieveGoal.isPending ||
-    cancelGoal.isPending
+    cancelGoal.isPending ||
+    blockUser.isPending
 
   async function run(label: string, action: () => Promise<unknown>) {
     setMessage(null)
@@ -84,6 +90,15 @@ export function MentorshipDetailPage({
     } catch (err) {
       setError(errorMessage(err))
     }
+  }
+
+  async function onBlock() {
+    if (!counterpartUserId) return
+    const confirmed = window.confirm(
+      'Block this person? Active mentorships end, open bookings cancel, and they disappear from discovery. They will not be notified.',
+    )
+    if (!confirmed) return
+    await run('User blocked', () => blockUser.mutateAsync(counterpartUserId))
   }
 
   async function onSaveGoal(event: React.FormEvent) {
@@ -216,6 +231,16 @@ export function MentorshipDetailPage({
                     </>
                   ) : null}
                 </div>
+                {counterpartUserId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void onBlock()}
+                  >
+                    Block user
+                  </Button>
+                ) : null}
                 {!isMentor && mentorship.status === 'ACTIVE' ? (
                   <Button asChild>
                     <Link

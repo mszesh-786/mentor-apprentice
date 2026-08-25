@@ -30,6 +30,7 @@ export function toDiscoveryMentorDetailResponse(
 ): DiscoveryMentorDetailResponseDto {
   return {
     id: detail.id,
+    userId: detail.userId,
     displayName: detail.displayName,
     headline: detail.headline,
     biography: detail.biography,

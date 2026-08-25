@@ -157,6 +157,16 @@ Continue body optional: `{ title?, description? }`. One ACTIVE relationship per 
 
 Session feedback: one submission per participant. Apprentice fields: useful, clear, progress, book again. Mentor fields: respectful, goal clear, mentor again. Optional comment. `GET /sessions/:id` includes `myFeedbackSubmitted`. Product feedback separate from interpersonal feedback.
 
+### Blocks (trust & safety)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/blocks/me` | List users you blocked |
+| POST | `/blocks` | Block user `{ blockedUserId }` |
+| DELETE | `/blocks/:blockedUserId` | Unblock |
+
+Block ends ACTIVE mentorships between the pair, cancels open REQUESTED/ACCEPTED bookings (`cancelReason=USER_BLOCKED`), and excludes both sides from discovery. Blocked party is not notified. Discovery mentor detail includes `userId` for block actions.
+
 ## Scripts
 
 | Command | Description |

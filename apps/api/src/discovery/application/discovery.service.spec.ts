@@ -123,6 +123,7 @@ describe('DiscoveryService', () => {
   it('records mentor profile view analytics', async () => {
     discoveryRepository.findDiscoverableDetail.mockResolvedValue({
       id: 'profile-1',
+      userId: 'mentor-1',
       displayName: 'David',
       headline: 'Mechanic',
       biography: 'Bio',

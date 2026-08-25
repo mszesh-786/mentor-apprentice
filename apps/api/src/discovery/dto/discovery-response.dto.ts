@@ -22,6 +22,7 @@ export class DiscoveryMentorCardResponseDto {
 
 export class DiscoveryMentorDetailResponseDto {
   id!: string;
+  userId!: string;
   displayName!: string;
   headline!: string | null;
   biography!: string | null;

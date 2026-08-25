@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useApprenticeProfile } from '@/api/apprentices'
+import { useBlockUser } from '@/api/blocks'
 import { useCreateBooking } from '@/api/bookings'
 import { useDiscoveryMentor, useMentorSlots } from '@/api/discovery'
 import type { BookingDuration } from '@/api/types'
@@ -47,6 +48,7 @@ export function ApprenticeMentorDetailPage() {
   const detailQuery = useDiscoveryMentor(profileId)
   const apprenticeQuery = useApprenticeProfile()
   const createBooking = useCreateBooking()
+  const blockUser = useBlockUser()
 
   const [skillId, setSkillId] = useState('')
   const [durationMinutes, setDurationMinutes] =
@@ -75,6 +77,23 @@ export function ApprenticeMentorDetailPage() {
   const detail = detailQuery.data
   const resolvedSkillId =
     skillId || detail?.expertise[0]?.skillId || ''
+
+  async function onBlock() {
+    if (!detail?.userId) return
+    const confirmed = window.confirm(
+      'Block this mentor? Open bookings cancel and they disappear from discovery. They will not be notified.',
+    )
+    if (!confirmed) return
+    setFeedback(null)
+    setError(null)
+    try {
+      await blockUser.mutateAsync(detail.userId)
+      setFeedback('Mentor blocked')
+      void navigate({ to: '/apprentice/discover' })
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+  }
 
   async function onBook() {
     setFeedback(null)
@@ -114,9 +133,20 @@ export function ApprenticeMentorDetailPage() {
               {detail?.headline ?? 'Loading profile…'}
             </p>
           </div>
-          <Button variant="outline" asChild>
-            <Link to="/apprentice/discover">Back</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {detail?.userId ? (
+              <Button
+                variant="outline"
+                disabled={blockUser.isPending}
+                onClick={() => void onBlock()}
+              >
+                Block
+              </Button>
+            ) : null}
+            <Button variant="outline" asChild>
+              <Link to="/apprentice/discover">Back</Link>
+            </Button>
+          </div>
         </div>
 
         {detailQuery.isError ? (

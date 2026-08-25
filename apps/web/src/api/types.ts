@@ -205,6 +205,7 @@ export type DiscoveryMentorCard = {
 
 export type DiscoveryMentorDetail = {
   id: string
+  userId: string
   displayName: string
   headline: string | null
   biography: string | null
@@ -417,4 +418,10 @@ export type SubmitProductFeedbackInput = {
   category: ProductFeedbackCategory
   message: string
   pageContext?: string
+}
+
+export type BlockEntry = {
+  blockedUserId: string
+  blockedDisplayName: string | null
+  createdAt: string
 }

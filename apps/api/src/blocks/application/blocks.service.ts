@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { UserStatus } from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
+import { BookingsService } from '../../bookings/application/bookings.service';
 import {
   ConflictError,
   ForbiddenError,
@@ -22,7 +23,14 @@ export class BlocksService {
     private readonly usersService: UsersService,
     @Inject(forwardRef(() => MentorshipsService))
     private readonly mentorshipsService: MentorshipsService,
+    @Inject(forwardRef(() => BookingsService))
+    private readonly bookingsService: BookingsService,
   ) {}
+
+  async listMine(user: AuthUser) {
+    this.assertActive(user);
+    return this.blocksRepository.listForBlocker(user.id);
+  }
 
   async blockUser(user: AuthUser, blockedUserId: string): Promise<void> {
     this.assertActive(user);
@@ -46,6 +54,11 @@ export class BlocksService {
       user.id,
       blockedUserId,
       user.id,
+    );
+    await this.bookingsService.cancelOpenBetweenUsers(
+      user.id,
+      user.id,
+      blockedUserId,
     );
   }
 
