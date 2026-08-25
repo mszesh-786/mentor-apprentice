@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { BookingStatus, SessionStatus, UserStatus } from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import { AnalyticsService } from '../../analytics/application/analytics.service';
+import { NotificationsService } from '../../notifications/application/notifications.service';
 import {
   ConflictError,
   ForbiddenError,
@@ -17,6 +18,7 @@ export class SessionsService {
   constructor(
     private readonly sessionsRepository: SessionsRepository,
     private readonly analyticsService: AnalyticsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getById(user: AuthUser, sessionId: string): Promise<MentoringSession> {
@@ -110,6 +112,15 @@ export class SessionsService {
     await this.analyticsService.recordSessionCompleted(user.id, {
       sessionId: completed.id,
       bookingId: completed.bookingId,
+    });
+
+    await this.notificationsService.notifyFeedbackRequested({
+      userId: completed.mentorUserId,
+      sessionId: completed.id,
+    });
+    await this.notificationsService.notifyFeedbackRequested({
+      userId: completed.apprenticeUserId,
+      sessionId: completed.id,
     });
 
     return completed;

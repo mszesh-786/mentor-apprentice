@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import { AnalyticsService } from '../../analytics/application/analytics.service';
+import { NotificationsService } from '../../notifications/application/notifications.service';
 import { ApprenticesRepository } from '../../apprentices/persistence/apprentices.repository';
 import { BlocksService } from '../../blocks/application/blocks.service';
 import {
@@ -86,8 +87,8 @@ describe('BookingsService', () => {
     apprenticeProfileId: 'apprentice-profile',
     skillId: 'skill-1',
     relationshipId: null,
-    startAt: new Date('2026-08-24T07:00:00.000Z'),
-    endAt: new Date('2026-08-24T07:30:00.000Z'),
+    startAt: new Date('2026-09-07T07:00:00.000Z'),
+    endAt: new Date('2026-09-07T07:30:00.000Z'),
     timezoneSnapshot: 'Europe/Helsinki',
     status: BookingStatus.REQUESTED,
     apprenticeMessage: null,
@@ -140,6 +141,15 @@ describe('BookingsService', () => {
       | 'recordBookingAccepted'
       | 'recordBookingDeclined'
       | 'recordBookingCancelled'
+    >
+  >;
+  let notificationsService: jest.Mocked<
+    Pick<
+      NotificationsService,
+      | 'notifyBookingRequested'
+      | 'notifyBookingAccepted'
+      | 'notifyBookingDeclined'
+      | 'notifyBookingCancelled'
     >
   >;
   let sessionsService: jest.Mocked<Pick<SessionsService, 'cancelForBooking'>>;
@@ -209,6 +219,12 @@ describe('BookingsService', () => {
       recordBookingDeclined: jest.fn(),
       recordBookingCancelled: jest.fn(),
     };
+    notificationsService = {
+      notifyBookingRequested: jest.fn(),
+      notifyBookingAccepted: jest.fn(),
+      notifyBookingDeclined: jest.fn(),
+      notifyBookingCancelled: jest.fn(),
+    };
     sessionsService = {
       cancelForBooking: jest.fn(),
     };
@@ -226,6 +242,7 @@ describe('BookingsService', () => {
       verificationService as unknown as VerificationService,
       blocksService as unknown as BlocksService,
       analyticsService as unknown as AnalyticsService,
+      notificationsService as unknown as NotificationsService,
       sessionsService as unknown as SessionsService,
       mentorshipsService as unknown as MentorshipsService,
     );
@@ -237,12 +254,13 @@ describe('BookingsService', () => {
     const created = await service.create(apprentice, {
       mentorProfileId: 'mentor-profile',
       skillId: 'skill-1',
-      startAt: '2026-08-24T07:00:00.000Z',
+      startAt: '2026-09-07T07:00:00.000Z',
       durationMinutes: 30,
     });
 
     expect(created.status).toBe(BookingStatus.REQUESTED);
     expect(analyticsService.recordBookingRequested).toHaveBeenCalled();
+    expect(notificationsService.notifyBookingRequested).toHaveBeenCalled();
   });
 
   it('rejects self-booking', async () => {
@@ -255,7 +273,7 @@ describe('BookingsService', () => {
       service.create(apprentice, {
         mentorProfileId: 'mentor-profile',
         skillId: 'skill-1',
-        startAt: '2026-08-24T07:00:00.000Z',
+        startAt: '2026-09-07T07:00:00.000Z',
         durationMinutes: 30,
       }),
     ).rejects.toThrow('Cannot book yourself');
@@ -312,7 +330,7 @@ describe('BookingsService', () => {
       service.create(apprentice, {
         mentorProfileId: 'mentor-profile',
         skillId: 'skill-1',
-        startAt: '2026-08-24T07:00:00.000Z',
+        startAt: '2026-09-07T07:00:00.000Z',
         durationMinutes: 30,
       }),
     ).rejects.toBeInstanceOf(NotFoundError);

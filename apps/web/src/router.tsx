@@ -31,6 +31,7 @@ import { ApprenticeMentorshipsPage } from '@/pages/apprentice/mentorships-page'
 import { ApprenticeMentorshipDetailPage } from '@/pages/apprentice/mentorship-detail-page'
 import { ProductFeedbackPage } from '@/pages/feedback/product-feedback-page'
 import { BlocksPage } from '@/pages/blocks/blocks-page'
+import { NotificationsPage } from '@/pages/notifications/notifications-page'
 import { ReportsPage } from '@/pages/reports/reports-page'
 
 function RootLayout() {
@@ -298,12 +299,22 @@ const reportsRoute = createRoute({
   component: ReportsPage,
 })
 
+const notificationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/notifications',
+  beforeLoad: () => {
+    requireAuth()
+  },
+  component: NotificationsPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   feedbackRoute,
   blocksRoute,
   reportsRoute,
+  notificationsRoute,
   mentorRoute,
   mentorProfileRoute,
   mentorLanguagesRoute,

@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAuth } from '@/auth/auth-context'
+import { useUnreadNotificationCount } from '@/api/notifications'
 import type { AppRole } from '@/auth/session'
 
 export function AppShell({
@@ -21,6 +22,8 @@ export function AppShell({
 }) {
   const { session, logout, setActiveRole } = useAuth()
   const navigate = useNavigate()
+  const unreadQuery = useUnreadNotificationCount()
+  const unreadCount = unreadQuery.data?.count ?? 0
   if (!session) return null
 
   return (
@@ -181,6 +184,17 @@ export function AppShell({
             className="ml-auto text-xs text-muted-foreground hover:text-foreground"
           >
             Help us improve
+          </Link>
+          <Link
+            to="/notifications"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Notifications
+            {unreadCount > 0 ? (
+              <Badge variant="default" className="h-5 min-w-5 px-1 text-[10px]">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
+            ) : null}
           </Link>
           <Link
             to="/blocks"

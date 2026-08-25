@@ -479,3 +479,27 @@ export type CreateUserReportInput = {
   sessionId?: string
   mentorshipId?: string
 }
+
+export type NotificationType =
+  | 'BOOKING_REQUESTED'
+  | 'BOOKING_ACCEPTED'
+  | 'BOOKING_DECLINED'
+  | 'BOOKING_CANCELLED'
+  | 'FEEDBACK_REQUESTED'
+
+export type NotificationStatus = 'UNREAD' | 'READ'
+
+export type NotificationRelatedEntityType = 'BOOKING' | 'SESSION'
+
+export type AppNotification = {
+  id: string
+  type: NotificationType
+  channel: 'IN_APP'
+  relatedEntityType: NotificationRelatedEntityType
+  relatedEntityId: string
+  title: string
+  body: string
+  status: NotificationStatus
+  createdAt: string
+  readAt: string | null
+}

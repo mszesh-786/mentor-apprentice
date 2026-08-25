@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ApprenticesModule } from '../apprentices/apprentices.module';
 import { AuthModule } from '../auth/auth.module';
 import { BlocksModule } from '../blocks/blocks.module';
@@ -23,6 +24,7 @@ import { BookingsRepository } from './persistence/bookings.repository';
     VerificationModule,
     forwardRef(() => BlocksModule),
     AnalyticsModule,
+    NotificationsModule,
     forwardRef(() => SessionsModule),
     forwardRef(() => MentorshipsModule),
   ],

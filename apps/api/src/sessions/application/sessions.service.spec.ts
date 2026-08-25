@@ -1,6 +1,7 @@
 import { BookingStatus, SessionStatus, UserStatus } from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import { AnalyticsService } from '../../analytics/application/analytics.service';
+import { NotificationsService } from '../../notifications/application/notifications.service';
 import {
   ConflictError,
   ForbiddenError,
@@ -77,6 +78,9 @@ describe('SessionsService', () => {
       | 'recordSessionCancelled'
     >
   >;
+  let notificationsService: jest.Mocked<
+    Pick<NotificationsService, 'notifyFeedbackRequested'>
+  >;
   let service: SessionsService;
 
   beforeEach(() => {
@@ -100,9 +104,13 @@ describe('SessionsService', () => {
       recordSessionTechFailure: jest.fn(),
       recordSessionCancelled: jest.fn(),
     };
+    notificationsService = {
+      notifyFeedbackRequested: jest.fn(),
+    };
     service = new SessionsService(
       sessionsRepository as unknown as SessionsRepository,
       analyticsService as unknown as AnalyticsService,
+      notificationsService as unknown as NotificationsService,
     );
   });
 

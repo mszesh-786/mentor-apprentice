@@ -15,6 +15,7 @@ import {
 } from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import { AnalyticsService } from '../../analytics/application/analytics.service';
+import { NotificationsService } from '../../notifications/application/notifications.service';
 import { ApprenticesRepository } from '../../apprentices/persistence/apprentices.repository';
 import { BlocksService } from '../../blocks/application/blocks.service';
 import {
@@ -53,6 +54,7 @@ export class BookingsService {
     @Inject(forwardRef(() => BlocksService))
     private readonly blocksService: BlocksService,
     private readonly analyticsService: AnalyticsService,
+    private readonly notificationsService: NotificationsService,
     @Inject(forwardRef(() => SessionsService))
     private readonly sessionsService: SessionsService,
     @Inject(forwardRef(() => MentorshipsService))
@@ -131,6 +133,12 @@ export class BookingsService {
       skillId: skill.id,
     });
 
+    await this.notificationsService.notifyBookingRequested({
+      mentorUserId: mentor.userId,
+      bookingId: booking.id,
+      apprenticeDisplayName: booking.apprenticeDisplayName,
+    });
+
     return booking;
   }
 
@@ -170,6 +178,12 @@ export class BookingsService {
         bookingId: accepted.id,
       });
 
+      await this.notificationsService.notifyBookingAccepted({
+        apprenticeUserId: accepted.apprenticeUserId,
+        bookingId: accepted.id,
+        mentorDisplayName: accepted.mentorDisplayName,
+      });
+
       return accepted;
     } catch (error) {
       if (error instanceof Error && error.message === 'BOOKING_NOT_PENDING') {
@@ -201,6 +215,12 @@ export class BookingsService {
       bookingId: declined.id,
     });
 
+    await this.notificationsService.notifyBookingDeclined({
+      apprenticeUserId: declined.apprenticeUserId,
+      bookingId: declined.id,
+      mentorDisplayName: declined.mentorDisplayName,
+    });
+
     return declined;
   }
 
@@ -224,6 +244,15 @@ export class BookingsService {
       }
       await this.analyticsService.recordBookingCancelled(actorUserId, {
         bookingId: booking.id,
+      });
+      const recipientUserId =
+        booking.mentorUserId === actorUserId
+          ? booking.apprenticeUserId
+          : booking.mentorUserId;
+      await this.notificationsService.notifyBookingCancelled({
+        recipientUserId,
+        bookingId: booking.id,
+        cancelReason: 'USER_BLOCKED',
       });
     }
   }
@@ -262,6 +291,15 @@ export class BookingsService {
 
     await this.analyticsService.recordBookingCancelled(user.id, {
       bookingId: cancelled.id,
+    });
+
+    const recipientUserId = isMentor
+      ? booking.apprenticeUserId
+      : booking.mentorUserId;
+    await this.notificationsService.notifyBookingCancelled({
+      recipientUserId,
+      bookingId: cancelled.id,
+      cancelReason: cancelled.cancelReason,
     });
 
     return cancelled;

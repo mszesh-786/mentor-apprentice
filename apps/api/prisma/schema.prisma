@@ -94,6 +94,7 @@ model User {
   productFeedback ProductFeedback[]
   reportsSubmitted UserReport[] @relation("ReportsSubmitted")
   reportsReceived UserReport[] @relation("ReportsReceived")
+  notifications Notification[]
 
   @@map("users")
 }
@@ -576,6 +577,47 @@ model UserReport {
   @@index([reportedUserId])
   @@index([status])
   @@map("user_reports")
+}
+
+enum NotificationType {
+  BOOKING_REQUESTED
+  BOOKING_ACCEPTED
+  BOOKING_DECLINED
+  BOOKING_CANCELLED
+  FEEDBACK_REQUESTED
+}
+
+enum NotificationChannel {
+  IN_APP
+}
+
+enum NotificationRelatedEntityType {
+  BOOKING
+  SESSION
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+model Notification {
+  id                String                        @id @default(cuid())
+  userId            String
+  type              NotificationType
+  channel           NotificationChannel           @default(IN_APP)
+  relatedEntityType NotificationRelatedEntityType
+  relatedEntityId   String
+  title             String
+  body              String
+  status            NotificationStatus            @default(UNREAD)
+  createdAt         DateTime                      @default(now())
+  readAt            DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+  @@map("notifications")
 }
 
 model MentorshipGoal {
