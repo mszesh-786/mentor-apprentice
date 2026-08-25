@@ -92,6 +92,8 @@ model User {
   mentorshipsEnded MentorshipRelationship[] @relation("MentorshipEndedBy")
   sessionFeedbackAuthored SessionFeedback[] @relation("SessionFeedbackAuthor")
   productFeedback ProductFeedback[]
+  reportsSubmitted UserReport[] @relation("ReportsSubmitted")
+  reportsReceived UserReport[] @relation("ReportsReceived")
 
   @@map("users")
 }
@@ -375,6 +377,7 @@ model Booking {
   cancelledBy       User?                    @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
   relationship      MentorshipRelationship?  @relation(fields: [relationshipId], references: [id], onDelete: SetNull)
   session           Session?
+  reports           UserReport[]
 
   @@index([mentorProfileId, status, startAt])
   @@index([apprenticeProfileId, status, startAt])
@@ -421,6 +424,7 @@ model Session {
   reportedBy User?           @relation("SessionReportedBy", fields: [reportedByUserId], references: [id], onDelete: SetNull)
   summary    SessionSummary?
   feedback   SessionFeedback[]
+  reports    UserReport[]
 
   @@index([status, createdAt])
   @@map("sessions")
@@ -526,11 +530,52 @@ model MentorshipRelationship {
   endedBy           User?             @relation("MentorshipEndedBy", fields: [endedByUserId], references: [id], onDelete: SetNull)
   goals             MentorshipGoal[]
   bookings          Booking[]
+  reports           UserReport[]
 
   @@index([mentorProfileId, status])
   @@index([apprenticeProfileId, status])
   @@index([mentorProfileId, apprenticeProfileId, primarySkillId, status])
   @@map("mentorship_relationships")
+}
+
+enum UserReportReason {
+  HARASSMENT
+  INAPPROPRIATE_BEHAVIOR
+  SAFETY_CONCERN
+  SPAM
+  OTHER
+}
+
+enum UserReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model UserReport {
+  id             String           @id @default(cuid())
+  reporterUserId String
+  reportedUserId String
+  bookingId      String?
+  sessionId      String?
+  mentorshipId   String?
+  reason         UserReportReason
+  description    String
+  status         UserReportStatus @default(OPEN)
+  createdAt      DateTime         @default(now())
+  resolvedAt     DateTime?
+
+  reporter   User                   @relation("ReportsSubmitted", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reported   User                   @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  booking    Booking?               @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  session    Session?               @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  mentorship MentorshipRelationship? @relation(fields: [mentorshipId], references: [id], onDelete: SetNull)
+
+  @@index([reporterUserId, createdAt])
+  @@index([reportedUserId])
+  @@index([status])
+  @@map("user_reports")
 }
 
 model MentorshipGoal {

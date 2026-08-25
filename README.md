@@ -167,6 +167,15 @@ Session feedback: one submission per participant. Apprentice fields: useful, cle
 
 Block ends ACTIVE mentorships between the pair, cancels open REQUESTED/ACCEPTED bookings (`cancelReason=USER_BLOCKED`), and excludes both sides from discovery. Blocked party is not notified. Discovery mentor detail includes `userId` for block actions.
 
+### Reports (Wave 12)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/reports` | Submit user report |
+| GET | `/reports/me` | List own submitted reports |
+
+Body: `{ reportedUserId, reason, description, bookingId?, sessionId?, mentorshipId? }`. Reasons: `HARASSMENT`, `INAPPROPRIATE_BEHAVIOR`, `SAFETY_CONCERN`, `SPAM`, `OTHER`. Reports start as `OPEN` and do not auto-suspend the reported user (BR-REPORT-003). Without explicit context ids, reporter must have an existing booking or mentorship with the reported user. One open report per reporter/reported pair. `GET /sessions/:id` includes `mentorUserId` and `apprenticeUserId` for safety actions.
+
 ## Scripts
 
 | Command | Description |

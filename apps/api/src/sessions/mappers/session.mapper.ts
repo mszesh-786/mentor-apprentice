@@ -21,6 +21,8 @@ export function toSessionResponse(
     reportedByUserId: session.reportedByUserId,
     bookingStartAt: session.bookingStartAt.toISOString(),
     bookingEndAt: session.bookingEndAt.toISOString(),
+    mentorUserId: session.mentorUserId,
+    apprenticeUserId: session.apprenticeUserId,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
     summary: session.summary

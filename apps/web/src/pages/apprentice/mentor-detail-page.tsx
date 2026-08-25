@@ -27,6 +27,7 @@ import { useDiscoveryMentor, useMentorSlots } from '@/api/discovery'
 import type { BookingDuration } from '@/api/types'
 import { BOOKING_DURATIONS } from '@/api/types'
 import { errorMessage } from '@/lib/errors'
+import { ReportUserForm } from '@/pages/reports/report-user-form'
 
 function formatSlot(iso: string, timeZone?: string | null) {
   try {
@@ -351,6 +352,21 @@ export function ApprenticeMentorDetailPage() {
                 </Button>
               </CardContent>
             </Card>
+
+            {detail.userId ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Report a safety concern</CardTitle>
+                  <CardDescription>
+                    Only available after you have booked or mentored with this
+                    person.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReportUserForm reportedUserId={detail.userId} />
+                </CardContent>
+              </Card>
+            ) : null}
           </>
         ) : null}
       </div>

@@ -28,6 +28,7 @@ import {
 } from '@/api/mentorships'
 import { formatWhen } from '@/lib/datetime'
 import { errorMessage } from '@/lib/errors'
+import { ReportUserForm } from '@/pages/reports/report-user-form'
 
 export function MentorshipDetailPage({
   role,
@@ -430,6 +431,23 @@ export function MentorshipDetailPage({
                 ))}
               </CardContent>
             </Card>
+
+            {counterpartUserId ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Report a safety concern</CardTitle>
+                  <CardDescription>
+                    Report inappropriate behavior related to this mentorship.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReportUserForm
+                    reportedUserId={counterpartUserId}
+                    mentorshipId={mentorship.id}
+                  />
+                </CardContent>
+              </Card>
+            ) : null}
           </>
         ) : null}
       </div>

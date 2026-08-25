@@ -43,6 +43,8 @@ export class SessionResponseDto {
   reportedByUserId!: string | null;
   bookingStartAt!: string;
   bookingEndAt!: string;
+  mentorUserId!: string;
+  apprenticeUserId!: string;
   createdAt!: string;
   updatedAt!: string;
   summary!: SessionSummaryResponseDto | null;

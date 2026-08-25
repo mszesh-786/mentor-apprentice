@@ -14,6 +14,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { MentorshipsModule } from './mentorships/mentorships.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { FeedbackModule } from './feedback/feedback.module';
     SessionsModule,
     MentorshipsModule,
     FeedbackModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

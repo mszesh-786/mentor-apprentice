@@ -188,6 +188,12 @@ export function AppShell({
           >
             Blocked
           </Link>
+          <Link
+            to="/reports"
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            My reports
+          </Link>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

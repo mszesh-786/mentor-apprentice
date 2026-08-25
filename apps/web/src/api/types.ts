@@ -297,6 +297,8 @@ export type MentoringSession = {
   reportedByUserId: string | null
   bookingStartAt: string
   bookingEndAt: string
+  mentorUserId: string
+  apprenticeUserId: string
   createdAt: string
   updatedAt: string
   summary: SessionSummary | null
@@ -424,4 +426,40 @@ export type BlockEntry = {
   blockedUserId: string
   blockedDisplayName: string | null
   createdAt: string
+}
+
+export type UserReportReason =
+  | 'HARASSMENT'
+  | 'INAPPROPRIATE_BEHAVIOR'
+  | 'SAFETY_CONCERN'
+  | 'SPAM'
+  | 'OTHER'
+
+export type UserReportStatus =
+  | 'OPEN'
+  | 'UNDER_REVIEW'
+  | 'RESOLVED'
+  | 'DISMISSED'
+
+export type UserReportEntry = {
+  id: string
+  reportedUserId: string
+  reportedDisplayName: string | null
+  bookingId: string | null
+  sessionId: string | null
+  mentorshipId: string | null
+  reason: UserReportReason
+  description: string
+  status: UserReportStatus
+  createdAt: string
+  resolvedAt: string | null
+}
+
+export type CreateUserReportInput = {
+  reportedUserId: string
+  reason: UserReportReason
+  description: string
+  bookingId?: string
+  sessionId?: string
+  mentorshipId?: string
 }

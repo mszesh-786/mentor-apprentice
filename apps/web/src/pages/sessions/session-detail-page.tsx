@@ -32,6 +32,7 @@ import {
 } from '@/api/sessions'
 import { formatWhen, isWithinDefaultJoinWindow } from '@/lib/datetime'
 import { errorMessage } from '@/lib/errors'
+import { ReportUserForm } from '@/pages/reports/report-user-form'
 
 export function SessionDetailPage({
   role,
@@ -90,6 +91,11 @@ export function SessionDetailPage({
   const bothJoined = Boolean(
     session?.mentorJoinedAt && session?.apprenticeJoinedAt,
   )
+  const counterpartUserId = session
+    ? isMentor
+      ? session.apprenticeUserId
+      : session.mentorUserId
+    : undefined
   const inWindow = session
     ? isWithinDefaultJoinWindow(session.bookingStartAt, session.bookingEndAt)
     : false
@@ -534,6 +540,25 @@ export function SessionDetailPage({
                         : 'Continue with this mentor'}
                     </Button>
                   </form>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {counterpartUserId ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Report a safety concern</CardTitle>
+                  <CardDescription>
+                    Report inappropriate behavior. This does not automatically
+                    suspend the other person.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReportUserForm
+                    reportedUserId={counterpartUserId}
+                    sessionId={session.id}
+                    bookingId={session.bookingId}
+                  />
                 </CardContent>
               </Card>
             ) : null}
