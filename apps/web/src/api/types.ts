@@ -133,6 +133,22 @@ export type AvailabilityRuleInput = {
   timezone?: string
 }
 
+export type AvailabilityException = {
+  id: string
+  date: string
+  startTime: string | null
+  endTime: string | null
+  type: 'UNAVAILABLE'
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateAvailabilityExceptionInput = {
+  date: string
+  startTime?: string | null
+  endTime?: string | null
+}
+
 export const DAYS_OF_WEEK: DayOfWeek[] = [
   'MONDAY',
   'TUESDAY',

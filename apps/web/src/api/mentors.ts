@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch, ApiError } from '@/api/client'
 import type {
+  AvailabilityException,
   AvailabilityRule,
   AvailabilityRuleInput,
+  CreateAvailabilityExceptionInput,
   ExpertiseInput,
   MentorProfile,
   ProfileInput,
@@ -11,6 +13,7 @@ import type {
 export const mentorKeys = {
   me: ['mentors', 'me'] as const,
   availability: ['mentors', 'availability'] as const,
+  availabilityExceptions: ['mentors', 'availability-exceptions'] as const,
   eligibility: ['mentors', 'eligibility'] as const,
 }
 
@@ -117,6 +120,48 @@ export function useSetAvailability() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: mentorKeys.availability })
       void qc.invalidateQueries({ queryKey: mentorKeys.me })
+    },
+  })
+}
+
+export function useMentorAvailabilityExceptions() {
+  return useQuery({
+    queryKey: mentorKeys.availabilityExceptions,
+    queryFn: () =>
+      apiFetch<AvailabilityException[]>('/mentors/me/availability-exceptions'),
+  })
+}
+
+export function useAddAvailabilityException() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateAvailabilityExceptionInput) =>
+      apiFetch<AvailabilityException>('/mentors/me/availability-exceptions', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: mentorKeys.availabilityExceptions,
+      })
+      void qc.invalidateQueries({ queryKey: ['discovery'] })
+    },
+  })
+}
+
+export function useRemoveAvailabilityException() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (exceptionId: string) =>
+      apiFetch<AvailabilityException[]>(
+        `/mentors/me/availability-exceptions/${exceptionId}`,
+        { method: 'DELETE' },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: mentorKeys.availabilityExceptions,
+      })
+      void qc.invalidateQueries({ queryKey: ['discovery'] })
     },
   })
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { AppShell } from '@/components/app-shell'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -20,8 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  useAddAvailabilityException,
   useMentorAvailability,
+  useMentorAvailabilityExceptions,
   useMentorProfile,
+  useRemoveAvailabilityException,
   useSetAvailability,
 } from '@/api/mentors'
 import type { AvailabilityRuleInput, DayOfWeek } from '@/api/types'
@@ -40,15 +44,40 @@ function newRule(timezone: string): DraftRule {
   }
 }
 
+function formatExceptionWindow(
+  startTime: string | null,
+  endTime: string | null,
+): string {
+  if (!startTime && !endTime) return 'All day'
+  if (startTime && endTime) return `${startTime} – ${endTime}`
+  return 'Partial block'
+}
+
+function defaultExceptionDate(): string {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  return date.toISOString().slice(0, 10)
+}
+
 export function MentorAvailabilityPage() {
   const profileQuery = useMentorProfile()
   const availabilityQuery = useMentorAvailability()
+  const exceptionsQuery = useMentorAvailabilityExceptions()
   const setAvailability = useSetAvailability()
+  const addException = useAddAvailabilityException()
+  const removeException = useRemoveAvailabilityException()
   const timezone = profileQuery.data?.timezone ?? 'Europe/Helsinki'
 
   const [rules, setRules] = useState<DraftRule[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [exceptionDate, setExceptionDate] = useState(defaultExceptionDate)
+  const [wholeDay, setWholeDay] = useState(true)
+  const [exceptionStart, setExceptionStart] = useState('10:00')
+  const [exceptionEnd, setExceptionEnd] = useState('12:00')
+  const [exceptionMessage, setExceptionMessage] = useState<string | null>(null)
+  const [exceptionError, setExceptionError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!availabilityQuery.data) return
@@ -102,17 +131,49 @@ export function MentorAvailabilityPage() {
     }
   }
 
+  async function onAddException(event: React.FormEvent) {
+    event.preventDefault()
+    setExceptionMessage(null)
+    setExceptionError(null)
+    try {
+      await addException.mutateAsync({
+        date: exceptionDate,
+        startTime: wholeDay ? null : exceptionStart,
+        endTime: wholeDay ? null : exceptionEnd,
+      })
+      setExceptionMessage('Exception added')
+      setExceptionDate(defaultExceptionDate())
+      setWholeDay(true)
+    } catch (err) {
+      setExceptionError(errorMessage(err))
+    }
+  }
+
+  async function onRemoveException(exceptionId: string) {
+    setExceptionMessage(null)
+    setExceptionError(null)
+    try {
+      await removeException.mutateAsync(exceptionId)
+      setExceptionMessage('Exception removed')
+    } catch (err) {
+      setExceptionError(errorMessage(err))
+    }
+  }
+
+  const exceptionsPending =
+    addException.isPending || removeException.isPending
+
   return (
     <AppShell title="Mentor · Availability">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Weekly availability
+              Availability
             </h1>
             <p className="text-muted-foreground">
-              Replace all weekly rules. At least one window is required to
-              publish.
+              Weekly schedule plus one-off unavailability. Exceptions override
+              recurring rules for booking slots.
             </p>
           </div>
           <Button variant="outline" asChild>
@@ -122,10 +183,10 @@ export function MentorAvailabilityPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Rules</CardTitle>
+            <CardTitle>Weekly rules</CardTitle>
             <CardDescription>
-              Times are local to each rule timezone (defaults to profile
-              timezone).
+              Replace all weekly rules. At least one window is required to
+              publish.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -228,6 +289,138 @@ export function MentorAvailabilityPage() {
               <Button variant="outline" asChild>
                 <Link to="/mentor/publish">Next: Publish</Link>
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Unavailability exceptions</CardTitle>
+            <CardDescription>
+              Block specific dates or time windows. Already confirmed bookings
+              stay valid.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form className="space-y-4 rounded-md border p-3" onSubmit={onAddException}>
+              <div className="space-y-2">
+                <Label htmlFor="exceptionDate">Date</Label>
+                <Input
+                  id="exceptionDate"
+                  type="date"
+                  value={exceptionDate}
+                  onChange={(event) => setExceptionDate(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="exceptionScope">Block type</Label>
+                <Select
+                  value={wholeDay ? 'all-day' : 'time-range'}
+                  onValueChange={(value) => setWholeDay(value === 'all-day')}
+                >
+                  <SelectTrigger id="exceptionScope">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-day">Whole day</SelectItem>
+                    <SelectItem value="time-range">Time range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {!wholeDay ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="exceptionStart">Start</Label>
+                    <Input
+                      id="exceptionStart"
+                      value={exceptionStart}
+                      onChange={(event) =>
+                        setExceptionStart(event.target.value)
+                      }
+                      placeholder="10:00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exceptionEnd">End</Label>
+                    <Input
+                      id="exceptionEnd"
+                      value={exceptionEnd}
+                      onChange={(event) => setExceptionEnd(event.target.value)}
+                      placeholder="12:00"
+                      required
+                    />
+                  </div>
+                </div>
+              ) : null}
+              <Button type="submit" disabled={exceptionsPending}>
+                {addException.isPending ? 'Adding…' : 'Add exception'}
+              </Button>
+            </form>
+
+            {exceptionMessage ? (
+              <Alert>
+                <AlertTitle>Updated</AlertTitle>
+                <AlertDescription>{exceptionMessage}</AlertDescription>
+              </Alert>
+            ) : null}
+            {exceptionError ? (
+              <Alert variant="destructive">
+                <AlertTitle>Exception failed</AlertTitle>
+                <AlertDescription>{exceptionError}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            {exceptionsQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">Loading exceptions…</p>
+            ) : null}
+
+            {exceptionsQuery.isError ? (
+              <Alert variant="destructive">
+                <AlertTitle>Could not load exceptions</AlertTitle>
+                <AlertDescription>
+                  {errorMessage(exceptionsQuery.error)}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {(exceptionsQuery.data ?? []).length === 0 &&
+            !exceptionsQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">
+                No exceptions yet.
+              </p>
+            ) : null}
+
+            <div className="space-y-2">
+              {(exceptionsQuery.data ?? []).map((exception) => (
+                <div
+                  key={exception.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+                >
+                  <div>
+                    <p className="font-medium">{exception.date}</p>
+                    <p className="text-muted-foreground">
+                      {formatExceptionWindow(
+                        exception.startTime,
+                        exception.endTime,
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{exception.type}</Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={exceptionsPending}
+                      onClick={() => void onRemoveException(exception.id)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
