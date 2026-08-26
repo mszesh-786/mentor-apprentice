@@ -63,6 +63,7 @@ export class BookingsService {
 
   async create(user: AuthUser, dto: CreateBookingDto): Promise<Booking> {
     this.assertActive(user);
+    this.assertEmailVerified(user);
     if (!user.roles.includes(Role.APPRENTICE)) {
       throw new ForbiddenError('Apprentice role required');
     }
@@ -525,6 +526,12 @@ export class BookingsService {
   private assertActive(user: AuthUser): void {
     if (user.status !== UserStatus.ACTIVE) {
       throw new ForbiddenError('Account is not active');
+    }
+  }
+
+  private assertEmailVerified(user: AuthUser): void {
+    if (!user.emailVerified) {
+      throw new ForbiddenError('Email verification is required before booking');
     }
   }
 }

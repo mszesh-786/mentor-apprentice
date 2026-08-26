@@ -34,10 +34,40 @@ Vite + TanStack Router + TanStack Query + minimal shadcn/ui.
 
 ```bash
 cp apps/web/.env.example apps/web/.env
-# VITE_JWT_SECRET must match apps/api JWT_SECRET
+# VITE_JWT_SECRET must match apps/api JWT_SECRET (stub mode)
 ```
 
-Stub login at `/login` mints a local HS256 JWT (mentor / apprentice / dual). Role switcher in the shell for dual users. Domain screens start in F2+.
+**Auth modes** (`AUTH_MODE` / `VITE_AUTH_MODE`):
+
+| Mode | Default | Behavior |
+|------|---------|----------|
+| `stub` | yes | Browser mints HS256 JWT; CI/e2e use this |
+| `auth0` | no | Auth0 Universal Login; API verifies RS256 via JWKS |
+
+Stub login at `/login` (persona + display name). Auth0 login at `/login` when `VITE_AUTH_MODE=auth0`, callback `/auth/callback`, role pick `/onboarding/role`.
+
+#### Auth0 setup (optional)
+
+1. Create Auth0 SPA app + API (audience).
+2. Allowed callback: `http://localhost:5173/auth/callback`
+3. Allowed logout: `http://localhost:5173`
+4. Post-Login Action — add email claims to the **access token**:
+
+```js
+exports.onExecutePostLogin = async (event, api) => {
+  const ns = 'https://mentor-apprentice.local/';
+  if (event.authorization) {
+    api.accessToken.setCustomClaim(`${ns}email`, event.user.email);
+    api.accessToken.setCustomClaim(`${ns}email_verified`, event.user.email_verified);
+    api.accessToken.setCustomClaim(`${ns}name`, event.user.name);
+  }
+};
+```
+
+5. API `.env`: `AUTH_MODE=auth0`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`
+6. Web `.env`: `VITE_AUTH_MODE=auth0`, `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`
+
+Roles are stored in the DB (`POST /users/me/roles`) — Auth0 tokens are not trusted for roles. Unverified email blocks publish, booking, and identity verification start.
 
 ### Mentor profile (Wave 1)
 
@@ -186,6 +216,15 @@ Body: `{ reportedUserId, reason, description, bookingId?, sessionId?, mentorship
 | POST | `/notifications/me/read-all` | Mark all read |
 
 Types: `BOOKING_REQUESTED`, `BOOKING_ACCEPTED`, `BOOKING_DECLINED`, `BOOKING_CANCELLED`, `FEEDBACK_REQUESTED`. Created after successful booking/session actions; notification failures do not roll back domain operations (BR-NOTIFY-005). Block flow does not notify the blocked user (BR-BLOCK-005). Email and session reminders are not in this wave.
+
+### Users / Auth (Wave F11)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/users/me` | Current user + `needsRoleSelection` |
+| POST | `/users/me/roles` | Add MENTOR / APPRENTICE roles `{ roles: [...] }` |
+
+`AUTH_MODE=stub` (default): HS256 JWT with roles in claims. `AUTH_MODE=auth0`: JWKS verify; roles only from DB. Email verification required for publish, booking create, and starting identity verification.
 
 ## Scripts
 

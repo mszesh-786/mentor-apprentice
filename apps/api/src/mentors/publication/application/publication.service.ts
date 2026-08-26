@@ -46,6 +46,7 @@ export class PublicationService {
 
   async publish(user: AuthUser): Promise<void> {
     this.assertActive(user);
+    this.assertEmailVerified(user);
 
     const profile = await this.mentorsRepository.findByUserId(user.id);
     if (!profile) {
@@ -221,6 +222,14 @@ export class PublicationService {
   private assertActive(user: AuthUser): void {
     if (user.status !== UserStatus.ACTIVE) {
       throw new ForbiddenError('Account is not active');
+    }
+  }
+
+  private assertEmailVerified(user: AuthUser): void {
+    if (!user.emailVerified) {
+      throw new ForbiddenError(
+        'Email verification is required before publishing',
+      );
     }
   }
 }

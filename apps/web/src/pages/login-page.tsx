@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/auth/auth-context'
+import { isAuth0WebMode } from '@/auth/auth-mode'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,8 +22,9 @@ import {
 } from '@/components/ui/select'
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, loginWithAuth0, isLoading } = useAuth()
   const navigate = useNavigate()
+  const auth0Mode = isAuth0WebMode()
   const [persona, setPersona] = useState<'mentor' | 'apprentice' | 'dual'>(
     'mentor',
   )
@@ -30,7 +32,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
-  async function onSubmit(event: React.FormEvent) {
+  async function onStubSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
     setPending(true)
@@ -46,17 +48,60 @@ export function LoginPage() {
     }
   }
 
+  async function onAuth0Click() {
+    setError(null)
+    setPending(true)
+    try {
+      await loginWithAuth0()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Auth0 login failed')
+      setPending(false)
+    }
+  }
+
+  if (auth0Mode) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>
+              Continue with Auth0. After first login you will choose Mentor,
+              Apprentice, or both.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {error ? (
+              <Alert variant="destructive">
+                <AlertTitle>Could not sign in</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+            <Button
+              className="w-full"
+              disabled={pending || isLoading}
+              onClick={() => void onAuth0Click()}
+            >
+              {pending || isLoading ? 'Redirecting…' : 'Continue with Auth0'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Stub login</CardTitle>
           <CardDescription>
-            Mints a local HS256 JWT matching the API secret. Validation A only.
+            Mints a local HS256 JWT matching the API secret. Use{' '}
+            <code>VITE_AUTH_MODE=auth0</code> for Auth0.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={onSubmit}>
+          <form className="space-y-4" onSubmit={onStubSubmit}>
             <div className="space-y-2">
               <Label htmlFor="displayName">Display name</Label>
               <Input
@@ -94,6 +139,60 @@ export function LoginPage() {
               {pending ? 'Signing in…' : 'Continue'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export function AuthCallbackPage() {
+  const { session, isLoading, refreshSessionFromApi } = useAuth()
+  const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isAuth0WebMode()) {
+      void navigate({ to: '/login' })
+      return
+    }
+    if (isLoading) return
+
+    void (async () => {
+      try {
+        const next = session ?? (await refreshSessionFromApi())
+        if (!next) {
+          await navigate({ to: '/login' })
+          return
+        }
+        if (next.needsRoleSelection || next.roles.length === 0) {
+          await navigate({ to: '/onboarding/role' })
+          return
+        }
+        await navigate({
+          to: next.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Auth callback failed')
+      }
+    })()
+  }, [isLoading, navigate, refreshSessionFromApi, session])
+
+  return (
+    <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Completing sign-in</CardTitle>
+          <CardDescription>Finishing Auth0 redirect…</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertTitle>Sign-in failed</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : (
+            <p className="text-sm text-muted-foreground">Please wait…</p>
+          )}
         </CardContent>
       </Card>
     </div>

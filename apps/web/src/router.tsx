@@ -7,7 +7,8 @@ import {
 } from '@tanstack/react-router'
 import { AuthProvider } from '@/auth/auth-context'
 import { loadSession } from '@/auth/session'
-import { LoginPage } from '@/pages/login-page'
+import { LoginPage, AuthCallbackPage } from '@/pages/login-page'
+import { RoleOnboardingPage } from '@/pages/onboarding/role-page'
 import { MentorHomePage } from '@/pages/mentor-home-page'
 import { ApprenticeHomePage } from '@/pages/apprentice-home-page'
 import { MentorProfilePage } from '@/pages/mentor/profile-page'
@@ -52,6 +53,9 @@ const indexRoute = createRoute({
   beforeLoad: () => {
     const session = loadSession()
     if (!session) throw redirect({ to: '/login' })
+    if (session.needsRoleSelection || session.roles.length === 0) {
+      throw redirect({ to: '/onboarding/role' })
+    }
     throw redirect({
       to: session.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
     })
@@ -63,18 +67,40 @@ const loginRoute = createRoute({
   path: '/login',
   beforeLoad: () => {
     const session = loadSession()
-    if (session) {
+    if (session && !session.needsRoleSelection && session.roles.length > 0) {
       throw redirect({
         to: session.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
       })
+    }
+    if (session?.needsRoleSelection || (session && session.roles.length === 0)) {
+      throw redirect({ to: '/onboarding/role' })
     }
   },
   component: LoginPage,
 })
 
+const authCallbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/auth/callback',
+  component: AuthCallbackPage,
+})
+
+const roleOnboardingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/onboarding/role',
+  beforeLoad: () => {
+    const session = loadSession()
+    if (!session) throw redirect({ to: '/login' })
+  },
+  component: RoleOnboardingPage,
+})
+
 function requireAuth(role?: 'MENTOR' | 'APPRENTICE') {
   const session = loadSession()
   if (!session) throw redirect({ to: '/login' })
+  if (session.needsRoleSelection || session.roles.length === 0) {
+    throw redirect({ to: '/onboarding/role' })
+  }
   if (role && !session.roles.includes(role)) {
     throw redirect({
       to: session.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
@@ -311,6 +337,8 @@ const notificationsRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  authCallbackRoute,
+  roleOnboardingRoute,
   feedbackRoute,
   blocksRoute,
   reportsRoute,

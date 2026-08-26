@@ -7,6 +7,8 @@ export type AuthSession = {
   displayName: string
   roles: AppRole[]
   activeRole: AppRole
+  emailVerified?: boolean
+  needsRoleSelection?: boolean
 }
 
 const STORAGE_KEY = 'ma.auth'

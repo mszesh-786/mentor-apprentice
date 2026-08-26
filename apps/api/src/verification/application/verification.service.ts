@@ -36,6 +36,7 @@ export class VerificationService {
 
   async startIdentity(user: AuthUser): Promise<IdentityVerification> {
     this.assertActive(user);
+    this.assertEmailVerified(user);
 
     const existing = await this.verificationRepository.findIdentityByUserId(
       user.id,
@@ -98,6 +99,14 @@ export class VerificationService {
   private assertActive(user: AuthUser): void {
     if (user.status !== UserStatus.ACTIVE) {
       throw new ForbiddenError('Account is not active');
+    }
+  }
+
+  private assertEmailVerified(user: AuthUser): void {
+    if (!user.emailVerified) {
+      throw new ForbiddenError(
+        'Email verification is required before identity verification',
+      );
     }
   }
 }

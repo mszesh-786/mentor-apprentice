@@ -1,4 +1,5 @@
 import { loadSession } from '@/auth/session'
+import { resolveAccessToken } from '@/auth/token-bridge'
 
 export class ApiError extends Error {
   readonly status: number
@@ -25,8 +26,9 @@ export async function apiFetch<T>(
   if (!headers.has('Content-Type') && init.body) {
     headers.set('Content-Type', 'application/json')
   }
-  if (session?.token) {
-    headers.set('Authorization', `Bearer ${session.token}`)
+  const token = await resolveAccessToken(session?.token)
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
   }
 
   const response = await fetch(`${apiBase()}${path}`, {

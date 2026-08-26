@@ -17,6 +17,7 @@ export async function mintStubToken(input: {
     displayName: input.displayName,
     roles: input.roles,
     emailVerified: true,
+    email_verified: true,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(input.sub)
