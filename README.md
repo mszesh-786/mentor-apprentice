@@ -69,6 +69,22 @@ exports.onExecutePostLogin = async (event, api) => {
 
 Roles are stored in the DB (`POST /users/me/roles`) — Auth0 tokens are not trusted for roles. Unverified email blocks publish, booking, and identity verification start.
 
+### Web features (implemented)
+
+UI at `http://localhost:5173`. Routes require the matching role unless noted.
+
+| Area | Routes | What you can do |
+|------|--------|-----------------|
+| Auth | `/login`, `/register`, `/auth/callback`, `/onboarding/role` | Sign in / create account (stub or Auth0); pick Mentor / Apprentice / both |
+| Mentor setup | `/mentor`, `/mentor/profile`, `/mentor/languages`, `/mentor/expertise`, `/mentor/verification`, `/mentor/availability`, `/mentor/publish` | Profile, languages, skills, identity verify (stub), weekly rules + unavailability exceptions, publish/unpublish |
+| Mentor ops | `/mentor/bookings`, `/mentor/sessions`, `/mentor/sessions/:id`, `/mentor/mentorships`, `/mentor/mentorships/:id` | Accept/decline/cancel bookings; join/complete/no-show/tech-fail; session summary; continue mentorship, goals, pause/end |
+| Apprentice | `/apprentice`, `/apprentice/profile`, `/apprentice/discover`, `/apprentice/discover/:profileId` | Profile; search mentors by skill; view detail + book slots |
+| Apprentice ops | `/apprentice/bookings`, `/apprentice/sessions`, `/apprentice/sessions/:id`, `/apprentice/mentorships`, `/apprentice/mentorships/:id` | Request/cancel bookings; join sessions; feedback; mentorship lifecycle |
+| Shared safety | `/blocks`, `/reports`, `/notifications`, `/feedback` | Blocked list; own reports; in-app notification inbox + badge; product feedback. Block/report also from session, mentorship, and mentor detail |
+| Admin | `/admin`, `/admin/users`, `/admin/users/:id`, `/admin/reports`, `/admin/reports/:id` | Search users; suspend/unsuspend; review + resolve reports (stub persona **Admin**) |
+
+**Not in UI yet:** payments / Stripe, email/session reminders, admin skill-catalogue CRUD.
+
 ### Mentor profile (Wave 1)
 
 Authenticated mentor JWT (HS256 stub):
