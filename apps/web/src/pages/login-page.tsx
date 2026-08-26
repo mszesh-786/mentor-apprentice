@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/auth/auth-context'
 import { isAuth0WebMode } from '@/auth/auth-mode'
+import { homePathForSession } from '@/auth/session'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,9 +26,9 @@ export function LoginPage() {
   const { login, loginWithAuth0, isLoading } = useAuth()
   const navigate = useNavigate()
   const auth0Mode = isAuth0WebMode()
-  const [persona, setPersona] = useState<'mentor' | 'apprentice' | 'dual'>(
-    'mentor',
-  )
+  const [persona, setPersona] = useState<
+    'mentor' | 'apprentice' | 'dual' | 'admin'
+  >('mentor')
   const [displayName, setDisplayName] = useState('David')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -39,7 +40,12 @@ export function LoginPage() {
     try {
       await login({ persona, displayName: displayName.trim() || 'User' })
       await navigate({
-        to: persona === 'apprentice' ? '/apprentice' : '/mentor',
+        to:
+          persona === 'admin'
+            ? '/admin'
+            : persona === 'apprentice'
+              ? '/apprentice'
+              : '/mentor',
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -116,7 +122,9 @@ export function LoginPage() {
               <Select
                 value={persona}
                 onValueChange={(value) =>
-                  setPersona(value as 'mentor' | 'apprentice' | 'dual')
+                  setPersona(
+                    value as 'mentor' | 'apprentice' | 'dual' | 'admin',
+                  )
                 }
               >
                 <SelectTrigger>
@@ -126,6 +134,7 @@ export function LoginPage() {
                   <SelectItem value="mentor">Mentor</SelectItem>
                   <SelectItem value="apprentice">Apprentice</SelectItem>
                   <SelectItem value="dual">Dual role</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -169,7 +178,7 @@ export function AuthCallbackPage() {
           return
         }
         await navigate({
-          to: next.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
+          to: homePathForSession(next),
         })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Auth callback failed')

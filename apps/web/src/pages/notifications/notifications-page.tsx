@@ -105,9 +105,11 @@ export function NotificationsPage() {
 
         <div className="space-y-3">
           {(listQuery.data ?? []).map((notification) => {
+            const role = session?.activeRole
             const href =
-              session?.activeRole &&
-              targetPath(notification, session.activeRole)
+              role === 'MENTOR' || role === 'APPRENTICE'
+                ? targetPath(notification, role)
+                : null
 
             return (
               <Card key={notification.id}>

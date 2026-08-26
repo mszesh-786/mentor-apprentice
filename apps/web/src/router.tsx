@@ -6,7 +6,7 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { AuthProvider } from '@/auth/auth-context'
-import { loadSession } from '@/auth/session'
+import { homePathForSession, loadSession } from '@/auth/session'
 import { LoginPage, AuthCallbackPage } from '@/pages/login-page'
 import { RoleOnboardingPage } from '@/pages/onboarding/role-page'
 import { MentorHomePage } from '@/pages/mentor-home-page'
@@ -34,6 +34,11 @@ import { ProductFeedbackPage } from '@/pages/feedback/product-feedback-page'
 import { BlocksPage } from '@/pages/blocks/blocks-page'
 import { NotificationsPage } from '@/pages/notifications/notifications-page'
 import { ReportsPage } from '@/pages/reports/reports-page'
+import { AdminHomePage } from '@/pages/admin/admin-home-page'
+import { AdminUsersPage } from '@/pages/admin/users-page'
+import { AdminUserDetailPage } from '@/pages/admin/user-detail-page'
+import { AdminReportsPage } from '@/pages/admin/reports-page'
+import { AdminReportDetailPage } from '@/pages/admin/report-detail-page'
 
 function RootLayout() {
   return (
@@ -57,7 +62,7 @@ const indexRoute = createRoute({
       throw redirect({ to: '/onboarding/role' })
     }
     throw redirect({
-      to: session.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
+      to: homePathForSession(session),
     })
   },
 })
@@ -69,7 +74,7 @@ const loginRoute = createRoute({
     const session = loadSession()
     if (session && !session.needsRoleSelection && session.roles.length > 0) {
       throw redirect({
-        to: session.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
+        to: homePathForSession(session),
       })
     }
     if (session?.needsRoleSelection || (session && session.roles.length === 0)) {
@@ -95,7 +100,7 @@ const roleOnboardingRoute = createRoute({
   component: RoleOnboardingPage,
 })
 
-function requireAuth(role?: 'MENTOR' | 'APPRENTICE') {
+function requireAuth(role?: 'MENTOR' | 'APPRENTICE' | 'ADMIN') {
   const session = loadSession()
   if (!session) throw redirect({ to: '/login' })
   if (session.needsRoleSelection || session.roles.length === 0) {
@@ -103,7 +108,7 @@ function requireAuth(role?: 'MENTOR' | 'APPRENTICE') {
   }
   if (role && !session.roles.includes(role)) {
     throw redirect({
-      to: session.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
+      to: homePathForSession(session),
     })
   }
   return session
@@ -334,6 +339,51 @@ const notificationsRoute = createRoute({
   component: NotificationsPage,
 })
 
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  beforeLoad: () => {
+    requireAuth('ADMIN')
+  },
+  component: AdminHomePage,
+})
+
+const adminUsersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/users',
+  beforeLoad: () => {
+    requireAuth('ADMIN')
+  },
+  component: AdminUsersPage,
+})
+
+const adminUserDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/users/$userId',
+  beforeLoad: () => {
+    requireAuth('ADMIN')
+  },
+  component: AdminUserDetailPage,
+})
+
+const adminReportsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/reports',
+  beforeLoad: () => {
+    requireAuth('ADMIN')
+  },
+  component: AdminReportsPage,
+})
+
+const adminReportDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/reports/$reportId',
+  beforeLoad: () => {
+    requireAuth('ADMIN')
+  },
+  component: AdminReportDetailPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -343,6 +393,11 @@ const routeTree = rootRoute.addChildren([
   blocksRoute,
   reportsRoute,
   notificationsRoute,
+  adminRoute,
+  adminUsersRoute,
+  adminUserDetailRoute,
+  adminReportsRoute,
+  adminReportDetailRoute,
   mentorRoute,
   mentorProfileRoute,
   mentorLanguagesRoute,

@@ -15,9 +15,10 @@ import { UsersService } from './users.service';
 import { UserRecord } from './users.types';
 
 function toMeResponse(user: UserRecord | AuthUser): UserMeResponseDto {
-  const roles = user.roles.filter(
+  const productRoles = user.roles.filter(
     (role) => role === 'MENTOR' || role === 'APPRENTICE',
   );
+  const isAdmin = user.roles.includes('ADMIN');
   return {
     id: user.id,
     email: user.email,
@@ -25,7 +26,8 @@ function toMeResponse(user: UserRecord | AuthUser): UserMeResponseDto {
     displayName: user.displayName,
     status: user.status,
     roles: user.roles,
-    needsRoleSelection: roles.length === 0,
+    // Admins do not need mentor/apprentice onboarding.
+    needsRoleSelection: productRoles.length === 0 && !isAdmin,
   };
 }
 

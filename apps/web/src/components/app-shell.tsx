@@ -12,6 +12,13 @@ import {
 import { useAuth } from '@/auth/auth-context'
 import { useUnreadNotificationCount } from '@/api/notifications'
 import type { AppRole } from '@/auth/session'
+import { homePathForSession } from '@/auth/session'
+
+function roleLabel(role: AppRole): string {
+  if (role === 'MENTOR') return 'Mentor'
+  if (role === 'APPRENTICE') return 'Apprentice'
+  return 'Admin'
+}
 
 export function AppShell({
   title,
@@ -25,6 +32,8 @@ export function AppShell({
   const unreadQuery = useUnreadNotificationCount()
   const unreadCount = unreadQuery.data?.count ?? 0
   if (!session) return null
+
+  const isAdmin = session.activeRole === 'ADMIN'
 
   return (
     <div className="min-h-screen">
@@ -45,7 +54,7 @@ export function AppShell({
                   const role = value as AppRole
                   setActiveRole(role)
                   void navigate({
-                    to: role === 'MENTOR' ? '/mentor' : '/apprentice',
+                    to: homePathForSession({ ...session, activeRole: role }),
                   })
                 }}
               >
@@ -55,13 +64,13 @@ export function AppShell({
                 <SelectContent>
                   {session.roles.map((role) => (
                     <SelectItem key={role} value={role}>
-                      {role === 'MENTOR' ? 'Mentor' : 'Apprentice'}
+                      {roleLabel(role)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : (
-              <Badge variant="outline">{session.activeRole}</Badge>
+              <Badge variant="outline">{roleLabel(session.activeRole)}</Badge>
             )}
             <Button
               variant="outline"
@@ -76,7 +85,28 @@ export function AppShell({
           </div>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-3 px-4 pb-3 text-sm">
-          {session.activeRole === 'MENTOR' ? (
+          {isAdmin ? (
+            <>
+              <Link
+                to="/admin"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Home
+              </Link>
+              <Link
+                to="/admin/users"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Users
+              </Link>
+              <Link
+                to="/admin/reports"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Reports
+              </Link>
+            </>
+          ) : session.activeRole === 'MENTOR' ? (
             <>
               <Link
                 to="/mentor"
@@ -179,35 +209,42 @@ export function AppShell({
               </Link>
             </>
           )}
-          <Link
-            to="/feedback"
-            className="ml-auto text-xs text-muted-foreground hover:text-foreground"
-          >
-            Help us improve
-          </Link>
-          <Link
-            to="/notifications"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            Notifications
-            {unreadCount > 0 ? (
-              <Badge variant="default" className="h-5 min-w-5 px-1 text-[10px]">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            ) : null}
-          </Link>
-          <Link
-            to="/blocks"
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            Blocked
-          </Link>
-          <Link
-            to="/reports"
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            My reports
-          </Link>
+          {!isAdmin ? (
+            <>
+              <Link
+                to="/feedback"
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              >
+                Help us improve
+              </Link>
+              <Link
+                to="/notifications"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Notifications
+                {unreadCount > 0 ? (
+                  <Badge
+                    variant="default"
+                    className="h-5 min-w-5 px-1 text-[10px]"
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                ) : null}
+              </Link>
+              <Link
+                to="/blocks"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Blocked
+              </Link>
+              <Link
+                to="/reports"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                My reports
+              </Link>
+            </>
+          ) : null}
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

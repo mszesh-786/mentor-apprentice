@@ -27,7 +27,7 @@ export async function mintStubToken(input: {
 }
 
 export async function createStubSession(input: {
-  persona: 'mentor' | 'apprentice' | 'dual'
+  persona: 'mentor' | 'apprentice' | 'dual' | 'admin'
   displayName: string
 }): Promise<AuthSession> {
   const roles: AppRole[] =
@@ -35,7 +35,9 @@ export async function createStubSession(input: {
       ? ['MENTOR']
       : input.persona === 'apprentice'
         ? ['APPRENTICE']
-        : ['MENTOR', 'APPRENTICE']
+        : input.persona === 'admin'
+          ? ['ADMIN']
+          : ['MENTOR', 'APPRENTICE']
 
   const sub = `web-${input.persona}-${input.displayName
     .toLowerCase()

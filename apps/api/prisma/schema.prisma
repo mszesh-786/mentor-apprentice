@@ -94,6 +94,7 @@ model User {
   productFeedback ProductFeedback[]
   reportsSubmitted UserReport[] @relation("ReportsSubmitted")
   reportsReceived UserReport[] @relation("ReportsReceived")
+  reportsResolved UserReport[] @relation("ReportsResolvedBy")
   notifications Notification[]
 
   @@map("users")
@@ -554,21 +555,33 @@ enum UserReportStatus {
   DISMISSED
 }
 
+enum UserReportResolutionOutcome {
+  NO_ACTION
+  WARNING
+  USER_SUSPENDED
+  USER_DEACTIVATED
+  DISMISSED
+}
+
 model UserReport {
-  id             String           @id @default(cuid())
-  reporterUserId String
-  reportedUserId String
-  bookingId      String?
-  sessionId      String?
-  mentorshipId   String?
-  reason         UserReportReason
-  description    String
-  status         UserReportStatus @default(OPEN)
-  createdAt      DateTime         @default(now())
-  resolvedAt     DateTime?
+  id                 String                         @id @default(cuid())
+  reporterUserId     String
+  reportedUserId     String
+  bookingId          String?
+  sessionId          String?
+  mentorshipId       String?
+  reason             UserReportReason
+  description        String
+  status             UserReportStatus               @default(OPEN)
+  createdAt          DateTime                       @default(now())
+  resolvedAt         DateTime?
+  resolutionOutcome  UserReportResolutionOutcome?
+  resolutionNote     String?
+  resolvedByUserId   String?
 
   reporter   User                   @relation("ReportsSubmitted", fields: [reporterUserId], references: [id], onDelete: Cascade)
   reported   User                   @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  resolvedBy User?                  @relation("ReportsResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
   booking    Booking?               @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   session    Session?               @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   mentorship MentorshipRelationship? @relation(fields: [mentorshipId], references: [id], onDelete: SetNull)

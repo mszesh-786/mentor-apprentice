@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/auth/auth-context'
 import type { AppRole } from '@/auth/session'
+import { homePathForSession } from '@/auth/session'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,7 +36,7 @@ export function RoleOnboardingPage() {
             : ['MENTOR', 'APPRENTICE']
       const next = await completeRoleSelection(roles)
       await navigate({
-        to: next.activeRole === 'MENTOR' ? '/mentor' : '/apprentice',
+        to: homePathForSession(next),
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save roles')

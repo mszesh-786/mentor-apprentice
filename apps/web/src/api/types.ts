@@ -503,3 +503,57 @@ export type AppNotification = {
   createdAt: string
   readAt: string | null
 }
+
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED'
+
+export type AdminUserListItem = {
+  id: string
+  email: string
+  displayName: string | null
+  status: UserStatus
+  roles: string[]
+  emailVerified: boolean
+  createdAt: string
+}
+
+export type AdminUserDetail = AdminUserListItem & {
+  mentorProfileId: string | null
+  mentorPublicationStatus: string | null
+  mentorIsBookable: boolean | null
+  verificationStatus: string | null
+  openReportsReceived: number
+}
+
+export type UserReportResolutionOutcome =
+  | 'NO_ACTION'
+  | 'WARNING'
+  | 'USER_SUSPENDED'
+  | 'USER_DEACTIVATED'
+  | 'DISMISSED'
+
+export type AdminReportListItem = {
+  id: string
+  reporterUserId: string
+  reporterDisplayName: string | null
+  reportedUserId: string
+  reportedDisplayName: string | null
+  reason: string
+  description: string
+  status: UserReportStatus
+  createdAt: string
+  resolvedAt: string | null
+  resolutionOutcome: UserReportResolutionOutcome | null
+}
+
+export type AdminReportDetail = AdminReportListItem & {
+  bookingId: string | null
+  sessionId: string | null
+  mentorshipId: string | null
+  resolutionNote: string | null
+  resolvedByUserId: string | null
+}
+
+export type ResolveReportInput = {
+  outcome: UserReportResolutionOutcome
+  note?: string
+}

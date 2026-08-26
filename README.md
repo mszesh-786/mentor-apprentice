@@ -226,6 +226,20 @@ Types: `BOOKING_REQUESTED`, `BOOKING_ACCEPTED`, `BOOKING_DECLINED`, `BOOKING_CAN
 
 `AUTH_MODE=stub` (default): HS256 JWT with roles in claims. `AUTH_MODE=auth0`: JWKS verify; roles only from DB. Email verification required for publish, booking create, and starting identity verification.
 
+### Admin (Wave F12)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/admin/users?q=&status=` | List/search users (ADMIN) |
+| GET | `/admin/users/:id` | User detail + mentor/verification snapshot |
+| POST | `/admin/users/:id/suspend` | Set `UserStatus.SUSPENDED` |
+| POST | `/admin/users/:id/unsuspend` | Restore `ACTIVE` |
+| GET | `/admin/reports?status=` | List reports |
+| GET | `/admin/reports/:id` | Report detail |
+| POST | `/admin/reports/:id/resolve` | `{ outcome, note? }` — outcomes: `NO_ACTION`, `WARNING`, `USER_SUSPENDED`, `USER_DEACTIVATED`, `DISMISSED` |
+
+Stub login persona **Admin** mints `ADMIN` role. Auth0: grant `ADMIN` in DB only — `/users/me/roles` cannot self-assign ADMIN. Suspended users already blocked from book/publish/session actions via existing `assertActive` gates; discovery excludes non-ACTIVE mentors.
+
 ## Scripts
 
 | Command | Description |

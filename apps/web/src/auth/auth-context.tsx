@@ -20,7 +20,7 @@ type AuthContextValue = {
   authMode: 'stub' | 'auth0'
   isLoading: boolean
   login: (input: {
-    persona: 'mentor' | 'apprentice' | 'dual'
+    persona: 'mentor' | 'apprentice' | 'dual' | 'admin'
     displayName: string
   }) => Promise<void>
   loginWithAuth0: () => Promise<void>
@@ -34,8 +34,20 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 function toAppRoles(roles: string[]): AppRole[] {
   return roles.filter(
-    (role): role is AppRole => role === 'MENTOR' || role === 'APPRENTICE',
+    (role): role is AppRole =>
+      role === 'MENTOR' || role === 'APPRENTICE' || role === 'ADMIN',
   )
+}
+
+function pickActiveRole(
+  roles: AppRole[],
+  preferred?: AppRole,
+): AppRole {
+  if (preferred && roles.includes(preferred)) return preferred
+  if (roles.includes('ADMIN')) return 'ADMIN'
+  if (roles.includes('MENTOR')) return 'MENTOR'
+  if (roles.includes('APPRENTICE')) return 'APPRENTICE'
+  return 'APPRENTICE'
 }
 
 function AuthProviderInner({ children }: { children: ReactNode }) {
@@ -65,7 +77,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       email: me.email,
       displayName: me.displayName?.trim() || auth0.user?.name || me.email,
       roles,
-      activeRole: roles[0] ?? 'APPRENTICE',
+      activeRole: pickActiveRole(roles),
       emailVerified: me.emailVerified,
       needsRoleSelection: me.needsRoleSelection || roles.length === 0,
     }
@@ -125,7 +137,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (input: {
-      persona: 'mentor' | 'apprentice' | 'dual'
+      persona: 'mentor' | 'apprentice' | 'dual' | 'admin'
       displayName: string
     }) => {
       if (authMode !== 'stub') {
@@ -183,7 +195,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         email: updated.email,
         displayName: updated.displayName?.trim() || updated.email,
         roles: appRoles,
-        activeRole: appRoles[0] ?? 'APPRENTICE',
+        activeRole: pickActiveRole(appRoles, loadSession()?.activeRole),
         emailVerified: updated.emailVerified,
         needsRoleSelection: false,
       }
@@ -228,7 +240,7 @@ function StubAuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (input: {
-      persona: 'mentor' | 'apprentice' | 'dual'
+      persona: 'mentor' | 'apprentice' | 'dual' | 'admin'
       displayName: string
     }) => {
       const next = await createStubSession(input)
@@ -270,7 +282,7 @@ function StubAuthProvider({ children }: { children: ReactNode }) {
     const next: AuthSession = {
       ...current,
       roles: appRoles,
-      activeRole: appRoles[0] ?? current.activeRole,
+      activeRole: pickActiveRole(appRoles, current.activeRole),
       emailVerified: updated.emailVerified,
       needsRoleSelection: false,
     }
