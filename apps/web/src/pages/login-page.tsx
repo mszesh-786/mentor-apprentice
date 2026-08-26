@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/auth/auth-context'
 import { isAuth0WebMode } from '@/auth/auth-mode'
 import { homePathForSession } from '@/auth/session'
@@ -90,6 +90,12 @@ export function LoginPage() {
             >
               {pending || isLoading ? 'Redirecting…' : 'Continue with Auth0'}
             </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              New here?{' '}
+              <Link to="/register" className="underline hover:text-foreground">
+                Create an account
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -100,10 +106,13 @@ export function LoginPage() {
     <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Stub login</CardTitle>
+          <CardTitle>Sign in</CardTitle>
           <CardDescription>
-            Mints a local HS256 JWT matching the API secret. Use{' '}
-            <code>VITE_AUTH_MODE=auth0</code> for Auth0.
+            Stub login mints a local HS256 JWT. Prefer{' '}
+            <Link to="/register" className="underline hover:text-foreground">
+              Create account
+            </Link>{' '}
+            for email + role. Use <code>VITE_AUTH_MODE=auth0</code> for Auth0.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,6 +156,12 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? 'Signing in…' : 'Continue'}
             </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              New here?{' '}
+              <Link to="/register" className="underline hover:text-foreground">
+                Create an account
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>

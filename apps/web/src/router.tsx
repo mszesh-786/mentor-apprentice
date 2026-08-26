@@ -8,6 +8,7 @@ import {
 import { AuthProvider } from '@/auth/auth-context'
 import { homePathForSession, loadSession } from '@/auth/session'
 import { LoginPage, AuthCallbackPage } from '@/pages/login-page'
+import { RegisterPage } from '@/pages/register-page'
 import { RoleOnboardingPage } from '@/pages/onboarding/role-page'
 import { MentorHomePage } from '@/pages/mentor-home-page'
 import { ApprenticeHomePage } from '@/pages/apprentice-home-page'
@@ -82,6 +83,23 @@ const loginRoute = createRoute({
     }
   },
   component: LoginPage,
+})
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register',
+  beforeLoad: () => {
+    const session = loadSession()
+    if (session && !session.needsRoleSelection && session.roles.length > 0) {
+      throw redirect({
+        to: homePathForSession(session),
+      })
+    }
+    if (session?.needsRoleSelection || (session && session.roles.length === 0)) {
+      throw redirect({ to: '/onboarding/role' })
+    }
+  },
+  component: RegisterPage,
 })
 
 const authCallbackRoute = createRoute({
@@ -387,6 +405,7 @@ const adminReportDetailRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  registerRoute,
   authCallbackRoute,
   roleOnboardingRoute,
   feedbackRoute,

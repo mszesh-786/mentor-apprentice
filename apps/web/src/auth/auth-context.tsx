@@ -12,8 +12,17 @@ import { fetchCurrentUser, setUserRoles } from '@/api/users'
 import { isAuth0WebMode } from '@/auth/auth-mode'
 import type { AppRole, AuthSession } from '@/auth/session'
 import { clearSession, loadSession, saveSession } from '@/auth/session'
-import { createStubSession } from '@/auth/stub-jwt'
+import {
+  createStubRegistration,
+  createStubSession,
+} from '@/auth/stub-jwt'
 import { setAccessTokenGetter } from '@/auth/token-bridge'
+
+type RegisterInput = {
+  email: string
+  displayName: string
+  persona: 'mentor' | 'apprentice' | 'dual'
+}
 
 type AuthContextValue = {
   session: AuthSession | null
@@ -23,7 +32,9 @@ type AuthContextValue = {
     persona: 'mentor' | 'apprentice' | 'dual' | 'admin'
     displayName: string
   }) => Promise<void>
+  register: (input: RegisterInput) => Promise<AuthSession>
   loginWithAuth0: () => Promise<void>
+  signupWithAuth0: () => Promise<void>
   logout: () => void
   setActiveRole: (role: AppRole) => void
   completeRoleSelection: (roles: AppRole[]) => Promise<AuthSession>
@@ -150,12 +161,51 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     [authMode],
   )
 
+  const register = useCallback(
+    async (input: RegisterInput) => {
+      if (authMode !== 'stub') {
+        throw new Error('Stub register is disabled when VITE_AUTH_MODE=auth0')
+      }
+      const next = await createStubRegistration(input)
+      saveSession({
+        ...next,
+        emailVerified: true,
+        needsRoleSelection: false,
+      })
+      setSession({
+        ...next,
+        emailVerified: true,
+        needsRoleSelection: false,
+      })
+      // Persist user row via JWT ensure-on-request
+      await fetchCurrentUser()
+      return {
+        ...next,
+        emailVerified: true,
+        needsRoleSelection: false,
+      }
+    },
+    [authMode],
+  )
+
   const loginWithAuth0 = useCallback(async () => {
     if (authMode !== 'auth0') {
       throw new Error('Auth0 login is disabled when VITE_AUTH_MODE=stub')
     }
     await auth0.loginWithRedirect({
       appState: { returnTo: window.location.pathname },
+    })
+  }, [auth0, authMode])
+
+  const signupWithAuth0 = useCallback(async () => {
+    if (authMode !== 'auth0') {
+      throw new Error('Auth0 signup is disabled when VITE_AUTH_MODE=stub')
+    }
+    await auth0.loginWithRedirect({
+      authorizationParams: {
+        screen_hint: 'signup',
+      },
+      appState: { returnTo: '/onboarding/role' },
     })
   }, [auth0, authMode])
 
@@ -212,7 +262,9 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       authMode,
       isLoading: bootstrapping || (authMode === 'auth0' && auth0.isLoading),
       login,
+      register,
       loginWithAuth0,
+      signupWithAuth0,
       logout,
       setActiveRole,
       completeRoleSelection,
@@ -224,7 +276,9 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       bootstrapping,
       auth0.isLoading,
       login,
+      register,
       loginWithAuth0,
+      signupWithAuth0,
       logout,
       setActiveRole,
       completeRoleSelection,
@@ -257,6 +311,19 @@ function StubAuthProvider({ children }: { children: ReactNode }) {
     },
     [],
   )
+
+  const register = useCallback(async (input: RegisterInput) => {
+    const next = await createStubRegistration(input)
+    const session: AuthSession = {
+      ...next,
+      emailVerified: true,
+      needsRoleSelection: false,
+    }
+    saveSession(session)
+    setSession(session)
+    await fetchCurrentUser()
+    return session
+  }, [])
 
   const logout = useCallback(() => {
     clearSession()
@@ -297,15 +364,19 @@ function StubAuthProvider({ children }: { children: ReactNode }) {
       authMode: 'stub' as const,
       isLoading: false,
       login,
+      register,
       loginWithAuth0: async () => {
         throw new Error('Auth0 login is disabled when VITE_AUTH_MODE=stub')
+      },
+      signupWithAuth0: async () => {
+        throw new Error('Auth0 signup is disabled when VITE_AUTH_MODE=stub')
       },
       logout,
       setActiveRole,
       completeRoleSelection,
       refreshSessionFromApi: async () => loadSession(),
     }),
-    [session, login, logout, setActiveRole, completeRoleSelection],
+    [session, login, register, logout, setActiveRole, completeRoleSelection],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

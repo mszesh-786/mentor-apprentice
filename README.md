@@ -44,7 +44,7 @@ cp apps/web/.env.example apps/web/.env
 | `stub` | yes | Browser mints HS256 JWT; CI/e2e use this |
 | `auth0` | no | Auth0 Universal Login; API verifies RS256 via JWKS |
 
-Stub login at `/login` (persona + display name). Auth0 login at `/login` when `VITE_AUTH_MODE=auth0`, callback `/auth/callback`, role pick `/onboarding/role`.
+Stub login at `/login` (persona + display name). Register at `/register` (email + Mentor/Apprentice/both; creates user via JWT + `GET /users/me`). Auth0: `/login` sign-in, `/register` opens Universal Login signup (`screen_hint=signup`), callback `/auth/callback`, role pick `/onboarding/role`.
 
 #### Auth0 setup (optional)
 
