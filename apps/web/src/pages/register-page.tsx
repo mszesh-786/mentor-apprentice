@@ -143,7 +143,7 @@ export function RegisterPage() {
                   setPersona(value as 'mentor' | 'apprentice' | 'dual')
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="register-persona-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

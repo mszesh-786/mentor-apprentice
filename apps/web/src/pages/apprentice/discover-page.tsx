@@ -73,7 +73,7 @@ export function ApprenticeDiscoverPage() {
               <div className="space-y-2">
                 <Label>Skill</Label>
                 <Select value={skillId} onValueChange={setSkillId}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="discover-skill-select">
                     <SelectValue placeholder="Select skill" />
                   </SelectTrigger>
                   <SelectContent>

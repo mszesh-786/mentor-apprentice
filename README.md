@@ -85,6 +85,8 @@ UI at `http://localhost:5173`. Routes require the matching role unless noted.
 
 **Not in UI yet:** payments / Stripe, email/session reminders, admin skill-catalogue CRUD.
 
+**Browser E2E:** Playwright smoke + full happy path (`apps/web/e2e`). CI Playwright job still pending — see Scripts / Playwright below.
+
 ### Mentor profile (Wave 1)
 
 Authenticated mentor JWT (HS256 stub):
@@ -266,6 +268,36 @@ Stub login persona **Admin** mints `ADMIN` role. Auth0: grant `ADMIN` in DB only
 | `npm run lint:check` | Lint without autofix |
 | `npm run test -w api` | API unit tests |
 | `npm run test:e2e -w api` | API e2e (needs Postgres) |
+| `npm run test:e2e:web` | Playwright browser smoke/e2e (needs API + stub auth) |
+
+### Playwright (web)
+
+Stub-auth browser tests under `apps/web/e2e`. Scaffold smoke: register mentor → `/mentor`.
+
+```bash
+# Terminal A — API (Postgres up, migrations + seed applied)
+npm run dev:api
+
+# Terminal B — Playwright starts Vite itself
+npm run test:e2e:web
+# or: npm run test:e2e -w web
+```
+
+Env (defaults match local stub):
+
+- `VITE_API_URL` / API on `http://127.0.0.1:3000`
+- `VITE_JWT_SECRET` = API `JWT_SECRET`
+- `VITE_AUTH_MODE=stub`
+
+HTML report: `npm run test:e2e:report -w web`. Specs: smoke register + full happy path.
+
+**API env for join/complete:** wide session window (same as API e2e):
+
+```bash
+SESSION_JOIN_OPEN_MINUTES_BEFORE=100000 SESSION_JOIN_CLOSE_MINUTES_AFTER_END=100000 npm run dev:api
+```
+
+CI Playwright job still pending.
 
 ## CI / CD
 

@@ -305,6 +305,7 @@ export function ApprenticeMentorDetailPage() {
                           type="button"
                           variant={selected ? 'default' : 'outline'}
                           className="justify-start"
+                          data-testid="booking-slot"
                           onClick={() => setSelectedStartAt(slot.startAt)}
                         >
                           {formatSlot(slot.startAt, detail.timezone)}
