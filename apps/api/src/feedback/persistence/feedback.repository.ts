@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  ProductFeedbackCategory,
-  SessionFeedbackRole,
-  SessionStatus,
-} from '@prisma/client';
+import { ProductFeedbackCategory, SessionFeedbackRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import {
   ProductFeedbackRecord,

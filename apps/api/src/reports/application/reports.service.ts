@@ -47,8 +47,8 @@ export class ReportsService {
     }
 
     let bookingId: string | null = dto.bookingId ?? null;
-    let sessionId: string | null = dto.sessionId ?? null;
-    let mentorshipId: string | null = dto.mentorshipId ?? null;
+    const sessionId: string | null = dto.sessionId ?? null;
+    const mentorshipId: string | null = dto.mentorshipId ?? null;
 
     if (sessionId) {
       const context = await this.requireSessionContext(user.id, sessionId);
@@ -58,7 +58,10 @@ export class ReportsService {
       const context = await this.requireBookingContext(user.id, bookingId);
       this.assertReportedCounterpart(context, user.id, dto.reportedUserId);
     } else if (mentorshipId) {
-      const context = await this.requireMentorshipContext(user.id, mentorshipId);
+      const context = await this.requireMentorshipContext(
+        user.id,
+        mentorshipId,
+      );
       this.assertReportedCounterpart(context, user.id, dto.reportedUserId);
     } else {
       const hasInteraction = await this.reportsRepository.hasInteractionBetween(

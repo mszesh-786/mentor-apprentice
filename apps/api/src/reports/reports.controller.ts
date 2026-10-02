@@ -11,10 +11,7 @@ import type { AuthUser } from '../auth/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ReportsService } from './application/reports.service';
-import {
-  CreateUserReportDto,
-  UserReportResponseDto,
-} from './dto/report.dto';
+import { CreateUserReportDto, UserReportResponseDto } from './dto/report.dto';
 import { toUserReportResponse } from './mappers/report.mapper';
 
 @Controller('reports')

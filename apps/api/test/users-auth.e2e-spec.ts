@@ -93,8 +93,12 @@ describe('Users auth (e2e)', () => {
       .send({ roles: [Role.MENTOR, Role.APPRENTICE] })
       .expect(200);
 
-    expect(updated.body.needsRoleSelection).toBe(false);
-    expect(updated.body.roles).toEqual(
+    const updatedBody = updated.body as {
+      needsRoleSelection: boolean;
+      roles: Role[];
+    };
+    expect(updatedBody.needsRoleSelection).toBe(false);
+    expect(updatedBody.roles).toEqual(
       expect.arrayContaining([Role.MENTOR, Role.APPRENTICE]),
     );
   });

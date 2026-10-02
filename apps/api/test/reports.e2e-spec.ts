@@ -2,12 +2,10 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
-  BookingStatus,
   CatalogueStatus,
   DayOfWeek,
   LanguageStatus,
   Role,
-  SessionStatus,
   TeachingLevel,
   UserReportReason,
   UserReportStatus,
@@ -153,7 +151,8 @@ describe('Reports (e2e)', () => {
       .set(auth(apprenticeToken))
       .expect(200);
 
-    const mentorUserId = (session.body as { mentorUserId: string }).mentorUserId;
+    const mentorUserId = (session.body as { mentorUserId: string })
+      .mentorUserId;
 
     const created = await request(app.getHttpServer())
       .post('/reports')

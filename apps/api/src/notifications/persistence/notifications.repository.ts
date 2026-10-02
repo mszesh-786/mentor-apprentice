@@ -64,7 +64,10 @@ export class NotificationsRepository {
     return row ? this.toDomain(row) : null;
   }
 
-  async markRead(id: string, userId: string): Promise<InAppNotification | null> {
+  async markRead(
+    id: string,
+    userId: string,
+  ): Promise<InAppNotification | null> {
     const existing = await this.findByIdForUser(id, userId);
     if (!existing) return null;
     if (existing.status === NotificationStatus.READ) {

@@ -20,8 +20,7 @@ const CLAIM_NS = 'https://mentor-apprentice.local/';
 
 // Lazily loaded so stub/CI e2e never pull ESM-only jose (jwks-rsa dependency).
 let jwksGetSigningKey:
-  | ((header: JwtHeader, callback: SigningKeyCallback) => void)
-  | null = null;
+  ((header: JwtHeader, callback: SigningKeyCallback) => void) | null = null;
 
 async function getAuth0SigningKeyFn() {
   if (jwksGetSigningKey) {
@@ -62,7 +61,7 @@ function readStringClaim(
   keys: string[],
 ): string | undefined {
   for (const key of keys) {
-    const value = payload[key];
+    const value: unknown = payload[key];
     if (typeof value === 'string' && value.trim()) {
       return value.trim();
     }
@@ -75,7 +74,7 @@ function readBooleanClaim(
   keys: string[],
 ): boolean | undefined {
   for (const key of keys) {
-    const value = payload[key];
+    const value: unknown = payload[key];
     if (typeof value === 'boolean') {
       return value;
     }
@@ -84,14 +83,13 @@ function readBooleanClaim(
 }
 
 function parseRoles(payload: JwtPayload): Role[] | undefined {
-  const raw = payload.roles ?? payload[`${CLAIM_NS}roles`];
+  const raw: unknown = payload.roles ?? payload[`${CLAIM_NS}roles`];
   if (!Array.isArray(raw)) {
     return undefined;
   }
   const allowed = new Set<string>(Object.values(Role));
   return raw.filter(
-    (value): value is Role =>
-      typeof value === 'string' && allowed.has(value),
+    (value): value is Role => typeof value === 'string' && allowed.has(value),
   );
 }
 
@@ -161,9 +159,11 @@ export async function verifyAccessToken(
       const payload = await jwtService.verifyAsync<
         JwtPayload & { emailVerified?: boolean }
       >(token);
+      const emailVerified: unknown =
+        payload.email_verified ?? payload.emailVerified;
       return toVerifiedPayload({
         ...payload,
-        email_verified: payload.email_verified ?? payload.emailVerified,
+        email_verified: emailVerified,
       });
     } catch {
       throw new UnauthorizedException('Invalid token');

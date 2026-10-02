@@ -1,7 +1,9 @@
 import { UserReport } from '../domain/report';
 import { UserReportResponseDto } from '../dto/report.dto';
 
-export function toUserReportResponse(report: UserReport): UserReportResponseDto {
+export function toUserReportResponse(
+  report: UserReport,
+): UserReportResponseDto {
   return {
     id: report.id,
     reportedUserId: report.reportedUserId,

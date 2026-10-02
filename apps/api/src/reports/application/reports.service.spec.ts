@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import { Role, UserReportReason, UserReportStatus, UserStatus } from '@prisma/client';
+import {
+  Role,
+  UserReportReason,
+  UserReportStatus,
+  UserStatus,
+} from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import { UsersService } from '../../users/users.service';
 import { ReportsRepository } from '../persistence/reports.repository';
@@ -31,10 +36,7 @@ describe('ReportsService', () => {
       listForReporter: jest.fn(),
     } as unknown as jest.Mocked<ReportsRepository>;
     usersService = { findById: jest.fn() };
-    service = new ReportsService(
-      repository,
-      usersService as UsersService,
-    );
+    service = new ReportsService(repository, usersService as UsersService);
   });
 
   it('creates a session-scoped report', async () => {

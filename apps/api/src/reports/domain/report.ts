@@ -1,7 +1,4 @@
-import {
-  UserReportReason,
-  UserReportStatus,
-} from '@prisma/client';
+import { UserReportReason, UserReportStatus } from '@prisma/client';
 
 export type UserReport = {
   id: string;

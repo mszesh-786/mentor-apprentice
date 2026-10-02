@@ -21,7 +21,9 @@ const participantMentorshipInclude = {
 export class ReportsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findBookingContext(bookingId: string): Promise<ParticipantContext | null> {
+  async findBookingContext(
+    bookingId: string,
+  ): Promise<ParticipantContext | null> {
     const row = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: participantBookingInclude,
@@ -34,7 +36,9 @@ export class ReportsRepository {
     };
   }
 
-  async findSessionContext(sessionId: string): Promise<ParticipantContext | null> {
+  async findSessionContext(
+    sessionId: string,
+  ): Promise<ParticipantContext | null> {
     const row = await this.prisma.session.findUnique({
       where: { id: sessionId },
       include: participantSessionInclude,
@@ -61,7 +65,10 @@ export class ReportsRepository {
     };
   }
 
-  async hasInteractionBetween(userAId: string, userBId: string): Promise<boolean> {
+  async hasInteractionBetween(
+    userAId: string,
+    userBId: string,
+  ): Promise<boolean> {
     const booking = await this.prisma.booking.findFirst({
       where: {
         OR: [

@@ -121,14 +121,14 @@ describe('Notifications (e2e)', () => {
       }),
     ]);
 
-    const notificationId = (list.body as Array<{ id: string }>)[0]!.id;
+    const notificationId = (list.body as Array<{ id: string }>)[0].id;
 
     await request(app.getHttpServer())
       .patch(`/notifications/${notificationId}/read`)
       .set(auth(mentorToken))
       .expect(200)
       .expect((res) => {
-        expect(res.body.status).toBe('READ');
+        expect((res.body as { status: string }).status).toBe('READ');
       });
 
     await request(app.getHttpServer())
@@ -136,7 +136,7 @@ describe('Notifications (e2e)', () => {
       .set(auth(mentorToken))
       .expect(200)
       .expect((res) => {
-        expect(res.body.count).toBe(0);
+        expect((res.body as { count: number }).count).toBe(0);
       });
   });
 });

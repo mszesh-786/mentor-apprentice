@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificationRelatedEntityType, NotificationType, UserStatus } from '@prisma/client';
+import {
+  NotificationRelatedEntityType,
+  NotificationType,
+  UserStatus,
+} from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
-import { ForbiddenError, NotFoundError } from '../../common/errors/domain-error';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from '../../common/errors/domain-error';
 import { NotificationsRepository } from '../persistence/notifications.repository';
 
 @Injectable()
