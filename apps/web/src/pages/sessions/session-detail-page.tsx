@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { StarRatingInput } from '@/components/star-rating'
 import {
   Select,
   SelectContent,
@@ -64,6 +65,7 @@ export function SessionDetailPage({
   )
   const [progressMade, setProgressMade] = useState<boolean | null>(null)
   const [wouldBookAgain, setWouldBookAgain] = useState<boolean | null>(null)
+  const [rating, setRating] = useState<number | null>(null)
   const [apprenticeRespectful, setApprenticeRespectful] = useState<
     boolean | null
   >(null)
@@ -157,9 +159,10 @@ export function SessionDetailPage({
           wasUseful === null ||
           explanationsClear === null ||
           progressMade === null ||
-          wouldBookAgain === null
+          wouldBookAgain === null ||
+          rating === null
         ) {
-          setError('Answer all feedback questions')
+          setError('Answer all feedback questions and pick a star rating')
           return
         }
         await submitFeedback.mutateAsync({
@@ -169,6 +172,7 @@ export function SessionDetailPage({
             explanationsClear,
             progressMade,
             wouldBookAgain,
+            rating,
             comment: feedbackComment.trim() || undefined,
           },
         })
@@ -448,6 +452,14 @@ export function SessionDetailPage({
                         </>
                       ) : (
                         <>
+                          <div className="space-y-2">
+                            <Label htmlFor="rating">Overall rating</Label>
+                            <StarRatingInput
+                              id="rating"
+                              value={rating}
+                              onChange={setRating}
+                            />
+                          </div>
                           <YesNoField
                             id="wasUseful"
                             label="Was the session useful?"

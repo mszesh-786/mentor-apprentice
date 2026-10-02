@@ -200,6 +200,7 @@ export type DiscoveryLanguage = {
 export type DiscoveryExpertise = {
   skillId: string
   skillName: string
+  categoryName: string
   yearsExperience: number
   teachingLevel: TeachingLevel
   description: string | null
@@ -209,6 +210,8 @@ export type DiscoveryMentorCard = {
   id: string
   displayName: string
   headline: string | null
+  bioExcerpt: string | null
+  profilePhotoUrl: string | null
   generalLocation: string | null
   languages: DiscoveryLanguage[]
   expertise: DiscoveryExpertise
@@ -217,6 +220,21 @@ export type DiscoveryMentorCard = {
   hasAvailability: boolean
   identityVerified: true
   matchReasons: string[]
+  averageRating: number | null
+  reviewCount: number
+}
+
+export type DiscoveryMentorReview = {
+  id: string
+  rating: number
+  comment: string | null
+  reviewerFirstName: string
+  createdAt: string
+}
+
+export type DiscoveryMentorReviewPage = {
+  items: DiscoveryMentorReview[]
+  total: number
 }
 
 export type DiscoveryMentorDetail = {
@@ -225,6 +243,10 @@ export type DiscoveryMentorDetail = {
   displayName: string
   headline: string | null
   biography: string | null
+  profilePhotoUrl: string | null
+  averageRating: number | null
+  reviewCount: number
+  completedSessionCount: number
   generalLocation: string | null
   timezone: string | null
   languages: DiscoveryLanguage[]
@@ -241,7 +263,9 @@ export type DiscoveryMentorDetail = {
 }
 
 export type DiscoverySearchParams = {
-  skillId: string
+  q?: string
+  categoryId?: string
+  skillId?: string
   languageId?: string
   teachingLevel?: TeachingLevel
 }
@@ -406,6 +430,7 @@ export type SessionFeedback = {
   apprenticeRespectful: boolean | null
   learningGoalClear: boolean | null
   wouldMentorAgain: boolean | null
+  rating: number | null
   comment: string | null
   createdAt: string
   updatedAt: string
@@ -416,6 +441,7 @@ export type SubmitApprenticeSessionFeedbackInput = {
   explanationsClear: boolean
   progressMade: boolean
   wouldBookAgain: boolean
+  rating: number
   comment?: string
 }
 

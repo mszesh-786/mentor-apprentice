@@ -94,21 +94,18 @@ export async function bookFirstSlotWithMentor(
   mentorDisplayName: string,
 ) {
   await page.goto('/apprentice/discover')
-  await page.getByTestId('discover-skill-select').click()
-  await page.getByRole('option', { name: SEEDED.skillName }).click()
-  await expect(page.getByTestId('discover-skill-select')).toContainText(
-    SEEDED.skillName,
-  )
-  await page.getByRole('button', { name: 'Search' }).click()
-  await expect(page.getByText(/^[1-9]\d* mentors? found$/)).toBeVisible({
+  await page.getByTestId('discover-search-input').fill(mentorDisplayName)
+  await page.getByRole('button', { name: 'Search', exact: true }).click()
+  await expect(page.getByText(/^1 mentor found$/)).toBeVisible({
     timeout: 20_000,
   })
 
-  await page
-    .getByRole('heading', { name: mentorDisplayName })
-    .locator('xpath=ancestor::div[contains(@class,\"rounded-lg\")][1]')
-    .getByRole('link', { name: 'View' })
-    .click()
+  const card = page
+    .getByTestId('mentor-card')
+    .filter({ hasText: mentorDisplayName })
+  await expect(card).toContainText(SEEDED.skillName)
+  await expect(card).toContainText('New')
+  await card.click()
 
   await expect(page).toHaveURL(/\/apprentice\/discover\//)
   await expect(
@@ -154,12 +151,29 @@ async function answerYes(page: Page, label: string) {
 }
 
 export async function submitApprenticeFeedback(page: Page) {
+  await page.getByTestId('rating-star-5').click()
   await answerYes(page, 'Was the session useful?')
   await answerYes(page, 'Were explanations clear?')
   await answerYes(page, 'Did you make progress toward your goal?')
   await answerYes(page, 'Would you book this mentor again?')
   await page.getByRole('button', { name: 'Submit feedback' }).click()
   await expect(page.getByText('Feedback submitted')).toBeVisible()
+}
+
+export async function expectMentorReviewVisible(
+  page: Page,
+  mentorDisplayName: string,
+) {
+  await page.goto('/apprentice/discover')
+  await page.getByTestId('discover-search-input').fill(mentorDisplayName)
+  await page.getByRole('button', { name: 'Search', exact: true }).click()
+  const card = page
+    .getByTestId('mentor-card')
+    .filter({ hasText: mentorDisplayName })
+  await expect(card).toContainText('5.0')
+  await expect(card).toContainText('(1)')
+  await card.click()
+  await expect(page.getByTestId('mentor-review')).toHaveCount(1)
 }
 
 export async function submitMentorFeedback(page: Page) {

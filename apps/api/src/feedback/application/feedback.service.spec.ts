@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import { Role, SessionFeedbackRole, SessionStatus, UserStatus } from '@prisma/client';
+import {
+  Role,
+  SessionFeedbackRole,
+  SessionStatus,
+  UserStatus,
+} from '@prisma/client';
 import { AuthUser } from '../../auth/auth-user';
 import { FeedbackService } from './feedback.service';
 import { FeedbackRepository } from '../persistence/feedback.repository';
@@ -50,25 +55,51 @@ describe('FeedbackService', () => {
       apprenticeRespectful: null,
       learningGoalClear: null,
       wouldMentorAgain: null,
+      rating: 5,
       comment: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    const result = await service.submitSessionFeedback(activeUser, 'session-1', {
-      wasUseful: true,
-      explanationsClear: true,
-      progressMade: true,
-      wouldBookAgain: true,
-    });
+    const result = await service.submitSessionFeedback(
+      activeUser,
+      'session-1',
+      {
+        wasUseful: true,
+        explanationsClear: true,
+        progressMade: true,
+        wouldBookAgain: true,
+        rating: 5,
+      },
+    );
 
     expect(result.role).toBe(SessionFeedbackRole.APPRENTICE);
     expect(repository.createSessionFeedback).toHaveBeenCalledWith(
       expect.objectContaining({
         role: SessionFeedbackRole.APPRENTICE,
         wasUseful: true,
+        rating: 5,
       }),
     );
+  });
+
+  it('rejects apprentice feedback without a star rating', async () => {
+    repository.findSessionParticipantContext.mockResolvedValue({
+      sessionId: 'session-1',
+      status: SessionStatus.COMPLETED,
+      mentorUserId: 'mentor-1',
+      apprenticeUserId: activeUser.id,
+    });
+    repository.findSessionFeedback.mockResolvedValue(null);
+
+    await expect(
+      service.submitSessionFeedback(activeUser, 'session-1', {
+        wasUseful: true,
+        explanationsClear: true,
+        progressMade: true,
+        wouldBookAgain: true,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects apprentice feedback with missing fields', async () => {

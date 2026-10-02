@@ -147,6 +147,7 @@ describe('Feedback (e2e)', () => {
         explanationsClear: true,
         progressMade: true,
         wouldBookAgain: true,
+        rating: 5,
         comment: 'Great session',
       })
       .expect(201);
@@ -170,6 +171,7 @@ describe('Feedback (e2e)', () => {
           sessionId,
           role: 'APPRENTICE',
           wasUseful: true,
+          rating: 5,
         });
       });
 
@@ -181,6 +183,7 @@ describe('Feedback (e2e)', () => {
         explanationsClear: false,
         progressMade: false,
         wouldBookAgain: false,
+        rating: 1,
       })
       .expect(409);
 
@@ -231,15 +234,14 @@ describe('Feedback (e2e)', () => {
       .expect(200);
 
     await request(app.getHttpServer())
-      .post(
-        `/sessions/${(readySession.body as { id: string }).id}/feedback`,
-      )
+      .post(`/sessions/${(readySession.body as { id: string }).id}/feedback`)
       .set(auth(apprenticeToken))
       .send({
         wasUseful: true,
         explanationsClear: true,
         progressMade: true,
         wouldBookAgain: true,
+        rating: 4,
       })
       .expect(400);
   });

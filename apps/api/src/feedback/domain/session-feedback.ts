@@ -12,6 +12,7 @@ export type SessionFeedbackRecord = {
   apprenticeRespectful: boolean | null;
   learningGoalClear: boolean | null;
   wouldMentorAgain: boolean | null;
+  rating: number | null;
   comment: string | null;
   createdAt: Date;
   updatedAt: Date;

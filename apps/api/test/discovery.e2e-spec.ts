@@ -2,10 +2,13 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  BookingStatus,
   CatalogueStatus,
   DayOfWeek,
   LanguageStatus,
   Role,
+  SessionFeedbackRole,
+  SessionStatus,
   TeachingLevel,
   VerificationStatus,
 } from '@prisma/client';
@@ -293,6 +296,137 @@ describe('Discovery (e2e)', () => {
       where: { type: 'MENTOR_PROFILE_VIEW' },
     });
     expect(views.length).toBeGreaterThan(0);
+  });
+
+  it('searches by free text without a skill filter', async () => {
+    await publishDiscoverableMentor(app, auth(mentorToken), {
+      englishId,
+      skillId,
+      teachingLevel: TeachingLevel.BEGINNER,
+    });
+
+    await request(app.getHttpServer())
+      .post('/apprentices/profile')
+      .set(auth(apprenticeToken))
+      .send({})
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/discovery/mentors')
+      .set(auth(apprenticeToken))
+      .expect(200)
+      .expect((res) => {
+        const body = res.body as Array<{
+          averageRating: number | null;
+          reviewCount: number;
+          expertise: { categoryName: string };
+        }>;
+        expect(body).toHaveLength(1);
+        expect(body[0]).toMatchObject({
+          averageRating: null,
+          reviewCount: 0,
+          expertise: { categoryName: 'Automotive' },
+        });
+      });
+
+    await request(app.getHttpServer())
+      .get('/discovery/mentors')
+      .query({ q: 'workshop' })
+      .set(auth(apprenticeToken))
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toHaveLength(1);
+      });
+
+    await request(app.getHttpServer())
+      .get('/discovery/mentors')
+      .query({ q: 'no-such-mentor-xyz' })
+      .set(auth(apprenticeToken))
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([]);
+      });
+  });
+
+  it('returns rating stats and reviews with reviewer first name only', async () => {
+    const profileId = await publishDiscoverableMentor(app, auth(mentorToken), {
+      englishId,
+      skillId,
+      teachingLevel: TeachingLevel.BEGINNER,
+    });
+
+    const apprenticeProfile = await request(app.getHttpServer())
+      .post('/apprentices/profile')
+      .set(auth(apprenticeToken))
+      .send({})
+      .expect(201);
+    const apprenticeUser = await prisma.user.findUniqueOrThrow({
+      where: { authProviderId: apprenticeToken.sub },
+    });
+
+    for (const [index, rating] of [5, 4].entries()) {
+      const startAt = new Date(Date.UTC(2026, 0, 5 + index, 10));
+      const booking = await prisma.booking.create({
+        data: {
+          mentorProfileId: profileId,
+          apprenticeProfileId: (apprenticeProfile.body as { id: string }).id,
+          skillId,
+          startAt,
+          endAt: new Date(startAt.getTime() + 30 * 60_000),
+          timezoneSnapshot: 'Europe/Helsinki',
+          status: BookingStatus.COMPLETED,
+        },
+      });
+      const session = await prisma.session.create({
+        data: {
+          bookingId: booking.id,
+          status: SessionStatus.COMPLETED,
+          externalRoomId: `room-${index}`,
+          joinUrl: `https://example.com/room-${index}`,
+        },
+      });
+      await prisma.sessionFeedback.create({
+        data: {
+          sessionId: session.id,
+          authorUserId: apprenticeUser.id,
+          role: SessionFeedbackRole.APPRENTICE,
+          rating,
+          comment: `Review ${index}`,
+          createdAt: new Date(Date.UTC(2026, 0, 10 + index)),
+        },
+      });
+    }
+
+    await request(app.getHttpServer())
+      .get(`/discovery/mentors/${profileId}`)
+      .set(auth(apprenticeToken))
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          averageRating: 4.5,
+          reviewCount: 2,
+          completedSessionCount: 2,
+        });
+      });
+
+    await request(app.getHttpServer())
+      .get(`/discovery/mentors/${profileId}/reviews`)
+      .query({ limit: 1 })
+      .set(auth(apprenticeToken))
+      .expect(200)
+      .expect((res) => {
+        const body = res.body as {
+          total: number;
+          items: Array<Record<string, unknown>>;
+        };
+        expect(body.total).toBe(2);
+        expect(body.items).toHaveLength(1);
+        expect(body.items[0]).toMatchObject({
+          rating: 4,
+          reviewerFirstName: 'Discovery',
+        });
+        expect(body.items[0]).not.toHaveProperty('authorUserId');
+      });
   });
 
   it('rejects discovery without APPRENTICE role', async () => {

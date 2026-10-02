@@ -22,6 +22,7 @@ export function toSessionFeedbackResponse(
     apprenticeRespectful: feedback.apprenticeRespectful,
     learningGoalClear: feedback.learningGoalClear,
     wouldMentorAgain: feedback.wouldMentorAgain,
+    rating: feedback.rating,
     comment: feedback.comment,
     createdAt: feedback.createdAt.toISOString(),
     updatedAt: feedback.updatedAt.toISOString(),

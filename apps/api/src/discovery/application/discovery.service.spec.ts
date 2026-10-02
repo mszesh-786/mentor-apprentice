@@ -25,11 +25,14 @@ describe('DiscoveryService', () => {
     userId: 'mentor-1',
     displayName: 'David',
     headline: 'Mechanic',
+    bioExcerpt: null,
+    profilePhotoUrl: null,
     generalLocation: 'Helsinki',
     languages: [{ id: 'lang-1', code: 'en', name: 'English' }],
     expertise: {
       skillId: 'skill-1',
       skillName: 'Basic Car Maintenance',
+      categoryName: 'Automotive',
       yearsExperience: 30,
       teachingLevel: TeachingLevel.BEGINNER,
       description: null,
@@ -38,6 +41,8 @@ describe('DiscoveryService', () => {
     currency: 'EUR',
     hasAvailability: true,
     matchReasons: ['Teaches Basic Car Maintenance', 'Identity verified'],
+    averageRating: 4.5,
+    reviewCount: 2,
   };
 
   let discoveryRepository: jest.Mocked<
@@ -91,6 +96,8 @@ describe('DiscoveryService', () => {
 
     expect(discoveryRepository.searchMentors).toHaveBeenCalledWith({
       skillId: 'skill-1',
+      categoryId: undefined,
+      q: undefined,
       languageId: undefined,
       teachingLevel: undefined,
       excludeUserIds: [],
@@ -114,6 +121,8 @@ describe('DiscoveryService', () => {
     expect(languagesService.assertActiveIds).toHaveBeenCalledWith(['lang-1']);
     expect(discoveryRepository.searchMentors).toHaveBeenCalledWith({
       skillId: 'skill-1',
+      categoryId: undefined,
+      q: undefined,
       languageId: 'lang-1',
       teachingLevel: TeachingLevel.BEGINNER,
       excludeUserIds: ['blocked-user'],
@@ -127,6 +136,7 @@ describe('DiscoveryService', () => {
       displayName: 'David',
       headline: 'Mechanic',
       biography: 'Bio',
+      profilePhotoUrl: null,
       generalLocation: 'Helsinki',
       timezone: 'Europe/Helsinki',
       languages: [],
@@ -135,6 +145,9 @@ describe('DiscoveryService', () => {
       availability: [],
       hourlyRate: null,
       currency: null,
+      averageRating: null,
+      reviewCount: 0,
+      completedSessionCount: 0,
     });
 
     await service.getMentorDetail(apprentice, 'profile-1');
@@ -143,6 +156,18 @@ describe('DiscoveryService', () => {
       'apprentice-1',
       { mentorProfileId: 'profile-1' },
     );
+  });
+
+  it('searches by free text without a skill and skips skill analytics', async () => {
+    discoveryRepository.searchMentors.mockResolvedValue([card]);
+
+    await service.searchMentors(apprentice, { q: '  brakes  ' });
+
+    expect(skillsService.assertActiveSkill).not.toHaveBeenCalled();
+    expect(discoveryRepository.searchMentors).toHaveBeenCalledWith(
+      expect.objectContaining({ skillId: undefined, q: 'brakes' }),
+    );
+    expect(analyticsService.recordSkillSearch).not.toHaveBeenCalled();
   });
 
   it('rejects invalid skill', async () => {

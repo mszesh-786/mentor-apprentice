@@ -12,6 +12,7 @@ import { LanguagesService } from '../../languages/application/languages.service'
 import {
   DiscoveryMentorCard,
   DiscoveryMentorDetail,
+  DiscoveryMentorReviewPage,
 } from '../domain/discovery';
 import { DiscoveryRepository } from '../persistence/discovery.repository';
 
@@ -28,35 +29,63 @@ export class DiscoveryService {
   async searchMentors(
     user: AuthUser,
     filters: {
-      skillId: string;
+      skillId?: string;
+      categoryId?: string;
+      q?: string;
       languageId?: string;
       teachingLevel?: TeachingLevel;
     },
   ): Promise<DiscoveryMentorCard[]> {
     this.assertActive(user);
 
-    const skill = await this.skillsService.assertActiveSkill(filters.skillId);
+    const skill = filters.skillId
+      ? await this.skillsService.assertActiveSkill(filters.skillId)
+      : null;
     if (filters.languageId) {
       await this.languagesService.assertActiveIds([filters.languageId]);
     }
 
     const excludeUserIds = await this.blocksService.getExcludedUserIds(user.id);
+    const q = filters.q?.trim() || undefined;
 
     const results = await this.discoveryRepository.searchMentors({
       skillId: filters.skillId,
+      categoryId: filters.categoryId,
+      q,
       languageId: filters.languageId,
       teachingLevel: filters.teachingLevel,
       excludeUserIds,
     });
 
-    await this.analyticsService.recordSkillSearch(user.id, {
-      skillId: skill.id,
-      languageId: filters.languageId,
-      teachingLevel: filters.teachingLevel,
-      resultCount: results.length,
-    });
+    if (skill) {
+      await this.analyticsService.recordSkillSearch(user.id, {
+        skillId: skill.id,
+        languageId: filters.languageId,
+        teachingLevel: filters.teachingLevel,
+        resultCount: results.length,
+      });
+    }
 
     return results;
+  }
+
+  async listMentorReviews(
+    user: AuthUser,
+    profileId: string,
+    page: { offset: number; limit: number },
+  ): Promise<DiscoveryMentorReviewPage> {
+    this.assertActive(user);
+
+    const excludeUserIds = await this.blocksService.getExcludedUserIds(user.id);
+    const detail = await this.discoveryRepository.findDiscoverableDetail(
+      profileId,
+      excludeUserIds,
+    );
+    if (!detail) {
+      throw new NotFoundError('Mentor not found');
+    }
+
+    return this.discoveryRepository.findMentorReviews(profileId, page);
   }
 
   async getMentorDetail(

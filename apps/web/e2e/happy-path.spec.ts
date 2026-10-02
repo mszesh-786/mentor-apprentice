@@ -6,6 +6,7 @@ import {
   completeMentorSetup,
   completeSession,
   continueMentorshipWithGoal,
+  expectMentorReviewVisible,
   joinSession,
   openFirstApprenticeSession,
   registerApprentice,
@@ -55,6 +56,8 @@ test.describe('happy path', () => {
       const goalTitle = `Shared goal ${stamp}`
       await upsertMentorshipGoal(apprenticePage, goalTitle)
       await expect(apprenticePage.getByText(goalTitle)).toBeVisible()
+
+      await expectMentorReviewVisible(apprenticePage, mentor.displayName)
     } finally {
       await mentorContext.close()
       await apprenticeContext.close()

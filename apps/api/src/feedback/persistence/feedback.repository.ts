@@ -52,7 +52,10 @@ export class FeedbackRepository {
     return row ? this.toSessionFeedback(row) : null;
   }
 
-  async hasSubmitted(sessionId: string, authorUserId: string): Promise<boolean> {
+  async hasSubmitted(
+    sessionId: string,
+    authorUserId: string,
+  ): Promise<boolean> {
     const row = await this.prisma.sessionFeedback.findUnique({
       where: {
         sessionId_authorUserId: { sessionId, authorUserId },
@@ -88,6 +91,7 @@ export class FeedbackRepository {
     apprenticeRespectful?: boolean;
     learningGoalClear?: boolean;
     wouldMentorAgain?: boolean;
+    rating?: number | null;
     comment?: string | null;
   }): Promise<SessionFeedbackRecord> {
     const row = await this.prisma.sessionFeedback.create({
@@ -102,6 +106,7 @@ export class FeedbackRepository {
         apprenticeRespectful: input.apprenticeRespectful ?? null,
         learningGoalClear: input.learningGoalClear ?? null,
         wouldMentorAgain: input.wouldMentorAgain ?? null,
+        rating: input.rating ?? null,
         comment: input.comment ?? null,
       },
     });
@@ -144,6 +149,7 @@ export class FeedbackRepository {
     apprenticeRespectful: boolean | null;
     learningGoalClear: boolean | null;
     wouldMentorAgain: boolean | null;
+    rating: number | null;
     comment: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -160,6 +166,7 @@ export class FeedbackRepository {
       apprenticeRespectful: row.apprenticeRespectful,
       learningGoalClear: row.learningGoalClear,
       wouldMentorAgain: row.wouldMentorAgain,
+      rating: row.rating,
       comment: row.comment,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

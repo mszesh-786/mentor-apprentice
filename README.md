@@ -78,8 +78,8 @@ UI at `http://localhost:5173`. Routes require the matching role unless noted.
 | Auth | `/login`, `/register`, `/auth/callback`, `/onboarding/role` | Sign in / create account (stub or Auth0); pick Mentor / Apprentice / both |
 | Mentor setup | `/mentor`, `/mentor/profile`, `/mentor/languages`, `/mentor/expertise`, `/mentor/verification`, `/mentor/availability`, `/mentor/publish` | Profile, languages, skills, identity verify (stub), weekly rules + unavailability exceptions, publish/unpublish |
 | Mentor ops | `/mentor/bookings`, `/mentor/sessions`, `/mentor/sessions/:id`, `/mentor/mentorships`, `/mentor/mentorships/:id` | Accept/decline/cancel bookings; join/complete/no-show/tech-fail; session summary; continue mentorship, goals, pause/end |
-| Apprentice | `/apprentice`, `/apprentice/profile`, `/apprentice/discover`, `/apprentice/discover/:profileId` | Profile; search mentors by skill; view detail + book slots |
-| Apprentice ops | `/apprentice/bookings`, `/apprentice/sessions`, `/apprentice/sessions/:id`, `/apprentice/mentorships`, `/apprentice/mentorships/:id` | Request/cancel bookings; join sessions; feedback; mentorship lifecycle |
+| Apprentice | `/apprentice`, `/apprentice/profile`, `/apprentice/discover`, `/apprentice/discover/:profileId` | Profile; search mentors (text, category chips, filters) in a card grid; mentor page with ratings, reviews, and sticky booking card |
+| Apprentice ops | `/apprentice/bookings`, `/apprentice/sessions`, `/apprentice/sessions/:id`, `/apprentice/mentorships`, `/apprentice/mentorships/:id` | Request/cancel bookings; join sessions; feedback with 1–5 star rating; mentorship lifecycle |
 | Shared safety | `/blocks`, `/reports`, `/notifications`, `/feedback` | Blocked list; own reports; in-app notification inbox + badge; product feedback. Block/report also from session, mentorship, and mentor detail |
 | Admin | `/admin`, `/admin/users`, `/admin/users/:id`, `/admin/reports`, `/admin/reports/:id` | Search users; suspend/unsuspend; review + resolve reports (stub persona **Admin**) |
 
@@ -141,11 +141,23 @@ Availability belongs to **MentorProfile**. Each rule stores a timezone (defaults
 | PATCH | `/apprentices/me` | Update own apprentice profile |
 | POST | `/blocks` | Block a user `{ blockedUserId }` |
 | DELETE | `/blocks/:blockedUserId` | Unblock |
-| GET | `/discovery/mentors?skillId=` | Search bookable mentors (`languageId`, `teachingLevel` optional) |
-| GET | `/discovery/mentors/:profileId` | Public mentor detail |
+| GET | `/discovery/mentors` | Search bookable mentors. All filters optional: `q` (name, headline, bio, skill, category), `categoryId`, `skillId`, `languageId`, `teachingLevel`. Max 50 results |
+| GET | `/discovery/mentors/:profileId` | Public mentor detail (incl. `averageRating`, `reviewCount`, `completedSessionCount`) |
+| GET | `/discovery/mentors/:profileId/reviews` | Apprentice reviews, newest first (`offset`, `limit` ≤ 50). Reviewer first name only |
 | GET | `/discovery/mentors/:profileId/slots` | Available slots (`from`, `to`, `durationMinutes`) |
 
-Discovery requires APPRENTICE role. Results only include ACTIVE + PUBLISHED + VERIFIED mentors with matching active expertise and availability. Blocked users are excluded. Search and profile views record analytics events (`SKILL_SEARCH`, `MENTOR_PROFILE_VIEW`).
+Discovery requires APPRENTICE role. Results only include ACTIVE + PUBLISHED + VERIFIED mentors with matching active expertise and availability. Blocked users are excluded. Cards include `averageRating` (1 decimal, `null` = no reviews), `reviewCount`, `bioExcerpt`, `profilePhotoUrl`. With `skillId` results sort by years of experience; otherwise by review-count-weighted rating. Search with `skillId` and profile views record analytics events (`SKILL_SEARCH`, `MENTOR_PROFILE_VIEW`).
+
+Ratings come from apprentice session feedback: `rating` (1–5) is required on apprentice feedback (`POST /sessions/:id/feedback`); mentor feedback has no rating.
+
+#### Demo data
+
+```bash
+npm run prisma:seed -w api   # catalogue first
+npm run seed:demo -w api     # 8 demo mentors, 6 apprentices, ~50 reviews
+```
+
+Rerunnable: deletes and recreates `demo-*@example.com` users and their bookings/sessions. Refuses to run when `NODE_ENV=production`. Photos load from `i.pravatar.cc`.
 
 ### Booking (Wave 8)
 

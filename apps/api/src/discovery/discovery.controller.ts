@@ -14,11 +14,16 @@ import { DiscoveryService } from './application/discovery.service';
 import {
   DiscoveryMentorCardResponseDto,
   DiscoveryMentorDetailResponseDto,
+  DiscoveryMentorReviewPageResponseDto,
 } from './dto/discovery-response.dto';
-import { DiscoverySearchQueryDto } from './dto/discovery-search-query.dto';
+import {
+  DiscoveryReviewsQueryDto,
+  DiscoverySearchQueryDto,
+} from './dto/discovery-search-query.dto';
 import {
   toDiscoveryMentorCardResponse,
   toDiscoveryMentorDetailResponse,
+  toDiscoveryMentorReviewPageResponse,
 } from './mappers/discovery.mapper';
 
 class DiscoverySlotsQueryDto {
@@ -50,10 +55,26 @@ export class DiscoveryController {
   ): Promise<DiscoveryMentorCardResponseDto[]> {
     const results = await this.discoveryService.searchMentors(user, {
       skillId: query.skillId,
+      categoryId: query.categoryId,
+      q: query.q,
       languageId: query.languageId,
       teachingLevel: query.teachingLevel,
     });
     return results.map(toDiscoveryMentorCardResponse);
+  }
+
+  @Get('mentors/:profileId/reviews')
+  async getMentorReviews(
+    @CurrentUser() user: AuthUser,
+    @Param('profileId') profileId: string,
+    @Query() query: DiscoveryReviewsQueryDto,
+  ): Promise<DiscoveryMentorReviewPageResponseDto> {
+    const page = await this.discoveryService.listMentorReviews(
+      user,
+      profileId,
+      { offset: query.offset ?? 0, limit: query.limit ?? 5 },
+    );
+    return toDiscoveryMentorReviewPageResponse(page);
   }
 
   @Get('mentors/:profileId/slots')

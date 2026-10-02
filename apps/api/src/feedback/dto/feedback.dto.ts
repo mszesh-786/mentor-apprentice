@@ -2,9 +2,12 @@ import { ProductFeedbackCategory, SessionFeedbackRole } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -36,6 +39,12 @@ export class SubmitSessionFeedbackDto {
   @IsOptional()
   @IsBoolean()
   wouldMentorAgain?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
 
   @IsOptional()
   @IsString()
@@ -70,6 +79,7 @@ export class SessionFeedbackResponseDto {
   apprenticeRespectful!: boolean | null;
   learningGoalClear!: boolean | null;
   wouldMentorAgain!: boolean | null;
+  rating!: number | null;
   comment!: string | null;
   createdAt!: string;
   updatedAt!: string;

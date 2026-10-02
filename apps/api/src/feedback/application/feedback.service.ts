@@ -6,7 +6,10 @@ import {
   ForbiddenError,
   NotFoundError,
 } from '../../common/errors/domain-error';
-import { SubmitProductFeedbackDto, SubmitSessionFeedbackDto } from '../dto/feedback.dto';
+import {
+  SubmitProductFeedbackDto,
+  SubmitSessionFeedbackDto,
+} from '../dto/feedback.dto';
 import { FeedbackRepository } from '../persistence/feedback.repository';
 
 @Injectable()
@@ -75,6 +78,7 @@ export class FeedbackService {
       explanationsClear: dto.explanationsClear,
       progressMade: dto.progressMade,
       wouldBookAgain: dto.wouldBookAgain,
+      rating: dto.rating,
       comment: dto.comment?.trim() || null,
     });
   }
@@ -126,7 +130,8 @@ export class FeedbackService {
       dto.wasUseful === undefined ||
       dto.explanationsClear === undefined ||
       dto.progressMade === undefined ||
-      dto.wouldBookAgain === undefined;
+      dto.wouldBookAgain === undefined ||
+      dto.rating === undefined;
     if (missing) {
       throw new BadRequestException('Apprentice feedback requires all ratings');
     }

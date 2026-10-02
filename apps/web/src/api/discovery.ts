@@ -1,10 +1,15 @@
-import { useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query'
 import { apiFetch } from '@/api/client'
 import type {
   AvailabilitySlot,
   BookingDuration,
   DiscoveryMentorCard,
   DiscoveryMentorDetail,
+  DiscoveryMentorReviewPage,
   DiscoverySearchParams,
 } from '@/api/types'
 
@@ -13,6 +18,8 @@ export const discoveryKeys = {
     ['discovery', 'mentors', params] as const,
   detail: (profileId: string) =>
     ['discovery', 'mentors', profileId] as const,
+  reviews: (profileId: string) =>
+    ['discovery', 'mentors', profileId, 'reviews'] as const,
   slots: (
     profileId: string,
     from: string,
@@ -32,18 +39,41 @@ function toQuery(params: Record<string, string | number | undefined>) {
   return qs ? `?${qs}` : ''
 }
 
-export function useDiscoverMentors(params: DiscoverySearchParams | null) {
+export function useDiscoverMentors(params: DiscoverySearchParams) {
   return useQuery({
-    queryKey: discoveryKeys.search(params ?? { skillId: '' }),
+    queryKey: discoveryKeys.search(params),
     queryFn: () =>
       apiFetch<DiscoveryMentorCard[]>(
         `/discovery/mentors${toQuery({
-          skillId: params!.skillId,
-          languageId: params!.languageId,
-          teachingLevel: params!.teachingLevel,
+          q: params.q,
+          categoryId: params.categoryId,
+          skillId: params.skillId,
+          languageId: params.languageId,
+          teachingLevel: params.teachingLevel,
         })}`,
       ),
-    enabled: Boolean(params?.skillId),
+    placeholderData: keepPreviousData,
+  })
+}
+
+const REVIEWS_PAGE_SIZE = 5
+
+export function useMentorReviews(profileId: string) {
+  return useInfiniteQuery({
+    queryKey: discoveryKeys.reviews(profileId),
+    queryFn: ({ pageParam }) =>
+      apiFetch<DiscoveryMentorReviewPage>(
+        `/discovery/mentors/${profileId}/reviews${toQuery({
+          offset: pageParam,
+          limit: REVIEWS_PAGE_SIZE,
+        })}`,
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => {
+      const loaded = pages.reduce((sum, page) => sum + page.items.length, 0)
+      return loaded < lastPage.total ? loaded : undefined
+    },
+    enabled: Boolean(profileId),
   })
 }
 
