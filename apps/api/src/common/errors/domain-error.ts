@@ -31,3 +31,16 @@ export class UnauthorizedError extends DomainError {
     super(message, 'UNAUTHORIZED');
   }
 }
+
+export class PublicationNotEligibleError extends DomainError {
+  constructor(
+    message = 'Mentor profile is not eligible for publication',
+    readonly requirements: Array<{
+      code: string;
+      label: string;
+      satisfied: boolean;
+    }> = [],
+  ) {
+    super(message, 'PUBLICATION_NOT_ELIGIBLE');
+  }
+}

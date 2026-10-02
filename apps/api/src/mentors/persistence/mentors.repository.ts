@@ -1,7 +1,19 @@
 import { Injectable } from '@nestjs/common';
+import {
+  CatalogueStatus,
+  ExpertiseStatus,
+  TeachingLevel,
+  VerificationStatus,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../database/prisma.service';
 import { Language } from '../../languages/domain/language';
+import { Skill } from '../../skills/domain/skill';
+import {
+  CreateMentorExpertiseInput,
+  MentorExpertise,
+  UpdateMentorExpertiseInput,
+} from '../domain/mentor-expertise';
 import {
   CreateMentorProfileInput,
   MentorProfile,
@@ -12,7 +24,41 @@ const profileInclude = {
   languages: {
     include: { language: true },
   },
+  expertise: {
+    include: {
+      skill: {
+        include: { category: true },
+      },
+    },
+  },
 } as const;
+
+type SkillRow = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  status: CatalogueStatus;
+  sortOrder: number;
+  category: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    sortOrder: number;
+  };
+};
+
+type ExpertiseRow = {
+  id: string;
+  mentorProfileId: string;
+  skillId: string;
+  yearsExperience: number;
+  description: string | null;
+  teachingLevel: TeachingLevel;
+  status: ExpertiseStatus;
+  skill: SkillRow;
+};
 
 @Injectable()
 export class MentorsRepository {
@@ -21,6 +67,14 @@ export class MentorsRepository {
   async findByUserId(userId: string): Promise<MentorProfile | null> {
     const row = await this.prisma.mentorProfile.findUnique({
       where: { userId },
+      include: profileInclude,
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
+  async findById(id: string): Promise<MentorProfile | null> {
+    const row = await this.prisma.mentorProfile.findUnique({
+      where: { id },
       include: profileInclude,
     });
     return row ? this.toDomain(row) : null;
@@ -90,6 +144,83 @@ export class MentorsRepository {
     ]);
   }
 
+  async findExpertiseByMentorAndSkill(
+    mentorProfileId: string,
+    skillId: string,
+  ): Promise<MentorExpertise | null> {
+    const row = await this.prisma.mentorExpertise.findUnique({
+      where: {
+        mentorProfileId_skillId: { mentorProfileId, skillId },
+      },
+      include: {
+        skill: { include: { category: true } },
+      },
+    });
+    return row ? this.toExpertise(row) : null;
+  }
+
+  async findExpertiseById(id: string): Promise<MentorExpertise | null> {
+    const row = await this.prisma.mentorExpertise.findUnique({
+      where: { id },
+      include: {
+        skill: { include: { category: true } },
+      },
+    });
+    return row ? this.toExpertise(row) : null;
+  }
+
+  async createExpertise(
+    input: CreateMentorExpertiseInput,
+  ): Promise<MentorExpertise> {
+    const row = await this.prisma.mentorExpertise.create({
+      data: {
+        mentorProfileId: input.mentorProfileId,
+        skillId: input.skillId,
+        yearsExperience: input.yearsExperience,
+        description: input.description,
+        teachingLevel: input.teachingLevel,
+      },
+      include: {
+        skill: { include: { category: true } },
+      },
+    });
+    return this.toExpertise(row);
+  }
+
+  async updateExpertise(
+    id: string,
+    input: UpdateMentorExpertiseInput,
+  ): Promise<MentorExpertise> {
+    const row = await this.prisma.mentorExpertise.update({
+      where: { id },
+      data: {
+        yearsExperience: input.yearsExperience,
+        description: input.description,
+        teachingLevel: input.teachingLevel,
+      },
+      include: {
+        skill: { include: { category: true } },
+      },
+    });
+    return this.toExpertise(row);
+  }
+
+  async deleteExpertise(id: string): Promise<void> {
+    await this.prisma.mentorExpertise.delete({ where: { id } });
+  }
+
+  async updatePublicationStatus(
+    userId: string,
+    publicationStatus: MentorProfile['publicationStatus'],
+  ): Promise<MentorProfile> {
+    const row = await this.prisma.mentorProfile.update({
+      where: { userId },
+      data: { publicationStatus },
+      include: profileInclude,
+    });
+    return this.toDomain(row);
+  }
+
   private toDomain(row: {
     id: string;
     userId: string;
@@ -111,6 +242,7 @@ export class MentorsRepository {
         sortOrder: number;
       };
     }>;
+    expertise: ExpertiseRow[];
   }): MentorProfile {
     return {
       id: row.id,
@@ -130,8 +262,49 @@ export class MentorsRepository {
             left.sortOrder - right.sortOrder ||
             left.name.localeCompare(right.name),
         ),
+      expertise: row.expertise
+        .map((entry) => this.toExpertise(entry))
+        .sort((left, right) => left.skill.name.localeCompare(right.skill.name)),
+      identityVerificationStatus: VerificationStatus.NOT_STARTED,
+      hasAvailability: false,
+      publicationEligibility: {
+        eligible: false,
+        requirements: [],
+      },
+      isBookable: false,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+    };
+  }
+
+  private toExpertise(row: ExpertiseRow): MentorExpertise {
+    return {
+      id: row.id,
+      mentorProfileId: row.mentorProfileId,
+      skillId: row.skillId,
+      yearsExperience: row.yearsExperience,
+      description: row.description,
+      teachingLevel: row.teachingLevel,
+      status: row.status,
+      skill: this.toSkill(row.skill),
+    };
+  }
+
+  private toSkill(row: SkillRow): Skill {
+    return {
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      description: row.description,
+      status: row.status,
+      sortOrder: row.sortOrder,
+      category: {
+        id: row.category.id,
+        slug: row.category.slug,
+        name: row.category.name,
+        description: row.category.description,
+        sortOrder: row.category.sortOrder,
+      },
     };
   }
 

@@ -11,6 +11,7 @@ import {
   DomainError,
   ForbiddenError,
   NotFoundError,
+  PublicationNotEligibleError,
   UnauthorizedError,
 } from './domain-error';
 
@@ -34,6 +35,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
         statusCode: this.toStatus(exception),
         code: exception.code,
         message: exception.message,
+        ...(exception instanceof PublicationNotEligibleError
+          ? { requirements: exception.requirements }
+          : {}),
       });
       return;
     }
@@ -53,6 +57,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
     }
     if (error instanceof ForbiddenError) {
       return HttpStatus.FORBIDDEN;
+    }
+    if (error instanceof PublicationNotEligibleError) {
+      return HttpStatus.UNPROCESSABLE_ENTITY;
     }
     if (error instanceof UnauthorizedError) {
       return HttpStatus.UNAUTHORIZED;

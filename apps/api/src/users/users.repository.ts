@@ -7,6 +7,14 @@ import { EnsureUserInput, UserRecord } from './users.types';
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: string): Promise<UserRecord | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+    return user ? this.toRecord(user) : null;
+  }
+
   async findByAuthProviderId(
     authProviderId: string,
   ): Promise<UserRecord | null> {
@@ -21,7 +29,8 @@ export class UsersRepository {
   }
 
   async create(input: EnsureUserInput): Promise<UserRecord> {
-    const roles = input.roles ?? [];
+    const acceptRoles = input.acceptClientRoles !== false;
+    const roles = acceptRoles ? (input.roles ?? []) : [];
     const user = await this.prisma.user.create({
       data: {
         authProviderId: input.authProviderId,
@@ -31,6 +40,30 @@ export class UsersRepository {
         roles: {
           create: roles.map((role) => ({ role })),
         },
+      },
+      include: { roles: true },
+    });
+    return this.toRecord(user);
+  }
+
+  async updateProfileFields(
+    userId: string,
+    data: {
+      email?: string;
+      displayName?: string | null;
+      emailVerified?: boolean;
+    },
+  ): Promise<UserRecord> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.email !== undefined ? { email: data.email } : {}),
+        ...(data.displayName !== undefined
+          ? { displayName: data.displayName }
+          : {}),
+        ...(data.emailVerified !== undefined
+          ? { emailVerified: data.emailVerified }
+          : {}),
       },
       include: { roles: true },
     });
@@ -62,6 +95,22 @@ export class UsersRepository {
       where: { id: userId },
       data: { displayName },
     });
+  }
+
+  async ensureRole(userId: string, role: Role): Promise<UserRecord> {
+    await this.prisma.userRole.upsert({
+      where: {
+        userId_role: { userId, role },
+      },
+      create: { userId, role },
+      update: {},
+    });
+
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: { roles: true },
+    });
+    return this.toRecord(user);
   }
 
   private toRecord(user: {

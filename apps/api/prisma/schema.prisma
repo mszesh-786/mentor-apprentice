@@ -32,6 +32,38 @@ enum LanguageStatus {
   DISABLED
 }
 
+enum CatalogueStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  DISABLED
+}
+
+enum TeachingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExpertiseStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AvailabilityRuleStatus {
+  ACTIVE
+  DISABLED
+}
+
 model User {
   id             String     @id @default(cuid())
   authProviderId String     @unique
@@ -46,6 +78,24 @@ model User {
 
   roles         UserRole[]
   mentorProfile MentorProfile?
+  apprenticeProfile ApprenticeProfile?
+  verifications Verification[]
+  blocksInitiated UserBlock[] @relation("Blocker")
+  blocksReceived  UserBlock[] @relation("Blocked")
+  analyticsEvents AnalyticsEvent[]
+  cancelledBookings Booking[] @relation("BookingCancelledBy")
+  sessionsAbsent    Session[] @relation("SessionAbsentUser")
+  sessionsReported  Session[] @relation("SessionReportedBy")
+  sessionSummariesCreated SessionSummary[] @relation("SessionSummaryCreatedBy")
+  sessionSummariesUpdated SessionSummary[] @relation("SessionSummaryUpdatedBy")
+  mentorshipGoalsCreated MentorshipGoal[] @relation("MentorshipGoalCreatedBy")
+  mentorshipsEnded MentorshipRelationship[] @relation("MentorshipEndedBy")
+  sessionFeedbackAuthored SessionFeedback[] @relation("SessionFeedbackAuthor")
+  productFeedback ProductFeedback[]
+  reportsSubmitted UserReport[] @relation("ReportsSubmitted")
+  reportsReceived UserReport[] @relation("ReportsReceived")
+  reportsResolved UserReport[] @relation("ReportsResolvedBy")
+  notifications Notification[]
 
   @@map("users")
 }
@@ -75,8 +125,13 @@ model MentorProfile {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   languages MentorLanguage[]
+  expertise MentorExpertise[]
+  availabilityRules AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  bookings Booking[]
+  mentorships MentorshipRelationship[]
 
   @@map("mentor_profiles")
 }
@@ -103,4 +158,496 @@ model MentorLanguage {
 
   @@id([mentorProfileId, languageId])
   @@map("mentor_languages")
+}
+
+model SkillCategory {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  name        String
+  description String?
+  status      CatalogueStatus @default(ACTIVE)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  skills Skill[]
+
+  @@map("skill_categories")
+}
+
+model Skill {
+  id          String          @id @default(cuid())
+  categoryId  String
+  slug        String          @unique
+  name        String
+  description String?
+  status      CatalogueStatus @default(ACTIVE)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  category  SkillCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  expertise MentorExpertise[]
+  bookings  Booking[]
+  mentorships MentorshipRelationship[]
+
+  @@map("skills")
+}
+
+model MentorExpertise {
+  id               String          @id @default(cuid())
+  mentorProfileId  String
+  skillId          String
+  yearsExperience  Int
+  description      String?
+  teachingLevel    TeachingLevel
+  status           ExpertiseStatus @default(ACTIVE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+  skill         Skill         @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([mentorProfileId, skillId])
+  @@map("mentor_expertise")
+}
+
+model AvailabilityRule {
+  id              String                 @id @default(cuid())
+  mentorProfileId String
+  dayOfWeek       DayOfWeek
+  startTime       String
+  endTime         String
+  timezone        String
+  status          AvailabilityRuleStatus @default(ACTIVE)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([mentorProfileId, dayOfWeek, startTime])
+  @@map("availability_rules")
+}
+
+enum AvailabilityExceptionType {
+  UNAVAILABLE
+}
+
+model AvailabilityException {
+  id              String                     @id @default(cuid())
+  mentorProfileId String
+  date            String
+  startTime       String?
+  endTime         String?
+  type            AvailabilityExceptionType  @default(UNAVAILABLE)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([mentorProfileId, date])
+  @@map("availability_exceptions")
+}
+
+enum VerificationType {
+  IDENTITY
+  CREDENTIAL
+}
+
+enum VerificationStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  FAILED
+  REQUIRES_REVIEW
+}
+
+enum VerificationProvider {
+  STUB
+}
+
+model Verification {
+  id                String               @id @default(cuid())
+  userId            String
+  type              VerificationType
+  status            VerificationStatus   @default(NOT_STARTED)
+  provider          VerificationProvider @default(STUB)
+  providerReference String?
+  submittedAt       DateTime?
+  verifiedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("verifications")
+}
+
+model ApprenticeProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  shortBio        String?
+  generalLocation String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+  mentorships MentorshipRelationship[]
+
+  @@map("apprentice_profiles")
+}
+
+model UserBlock {
+  id            String   @id @default(cuid())
+  blockerUserId String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerUserId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerUserId, blockedUserId])
+  @@index([blockedUserId])
+  @@map("user_blocks")
+}
+
+enum AnalyticsEventType {
+  SKILL_SEARCH
+  MENTOR_PROFILE_VIEW
+  BOOKING_REQUESTED
+  BOOKING_ACCEPTED
+  BOOKING_DECLINED
+  BOOKING_CANCELLED
+  SESSION_JOINED
+  SESSION_COMPLETED
+  SESSION_NO_SHOW
+  SESSION_TECH_FAILURE
+  SESSION_CANCELLED
+  MENTORSHIP_CONTINUED
+  MENTORSHIP_PAUSED
+  MENTORSHIP_RESUMED
+  MENTORSHIP_COMPLETED
+  MENTORSHIP_ENDED
+  MENTORSHIP_GOAL_UPSERTED
+}
+
+model AnalyticsEvent {
+  id          String             @id @default(cuid())
+  type        AnalyticsEventType
+  actorUserId String?
+  payload     Json
+  createdAt   DateTime           @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@map("analytics_events")
+}
+
+enum BookingStatus {
+  REQUESTED
+  ACCEPTED
+  CONFIRMED
+  COMPLETED
+  DECLINED
+  CANCELLED
+  NO_SHOW
+}
+
+model Booking {
+  id                  String        @id @default(cuid())
+  mentorProfileId     String
+  apprenticeProfileId String
+  skillId             String
+  relationshipId      String?
+  startAt             DateTime
+  endAt               DateTime
+  timezoneSnapshot    String
+  status              BookingStatus @default(REQUESTED)
+  apprenticeMessage   String?
+  declineReason       String?
+  cancelledByUserId   String?
+  cancelReason        String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  mentorProfile     MentorProfile            @relation(fields: [mentorProfileId], references: [id], onDelete: Restrict)
+  apprenticeProfile ApprenticeProfile        @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
+  skill             Skill                    @relation(fields: [skillId], references: [id], onDelete: Restrict)
+  cancelledBy       User?                    @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  relationship      MentorshipRelationship?  @relation(fields: [relationshipId], references: [id], onDelete: SetNull)
+  session           Session?
+  reports           UserReport[]
+
+  @@index([mentorProfileId, status, startAt])
+  @@index([apprenticeProfileId, status, startAt])
+  @@index([relationshipId])
+  @@map("bookings")
+}
+
+enum SessionStatus {
+  READY
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SessionFailureReason {
+  TECHNICAL_FAILURE
+  NO_SHOW
+}
+
+enum VideoProvider {
+  STUB
+}
+
+model Session {
+  id                 String                @id @default(cuid())
+  bookingId          String                @unique
+  status             SessionStatus         @default(READY)
+  videoProvider      VideoProvider         @default(STUB)
+  externalRoomId     String
+  joinUrl            String
+  mentorJoinedAt     DateTime?
+  apprenticeJoinedAt DateTime?
+  startedAt          DateTime?
+  endedAt            DateTime?
+  failureReason      SessionFailureReason?
+  absentUserId       String?
+  reportedByUserId   String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  booking    Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  absentUser User?           @relation("SessionAbsentUser", fields: [absentUserId], references: [id], onDelete: SetNull)
+  reportedBy User?           @relation("SessionReportedBy", fields: [reportedByUserId], references: [id], onDelete: SetNull)
+  summary    SessionSummary?
+  feedback   SessionFeedback[]
+  reports    UserReport[]
+
+  @@index([status, createdAt])
+  @@map("sessions")
+}
+
+enum SessionFeedbackRole {
+  MENTOR
+  APPRENTICE
+}
+
+enum ProductFeedbackCategory {
+  CONFUSING
+  MISSING
+  DIFFICULT
+  GENERAL
+}
+
+model SessionFeedback {
+  id                   String              @id @default(cuid())
+  sessionId            String
+  authorUserId         String
+  role                 SessionFeedbackRole
+  wasUseful            Boolean?
+  explanationsClear    Boolean?
+  progressMade         Boolean?
+  wouldBookAgain       Boolean?
+  apprenticeRespectful Boolean?
+  learningGoalClear    Boolean?
+  wouldMentorAgain     Boolean?
+  rating               Int?
+  comment              String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author  User    @relation("SessionFeedbackAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, authorUserId])
+  @@index([sessionId])
+  @@map("session_feedback")
+}
+
+model ProductFeedback {
+  id          String                  @id @default(cuid())
+  userId      String
+  category    ProductFeedbackCategory @default(GENERAL)
+  message     String
+  pageContext String?
+  createdAt   DateTime                @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("product_feedback")
+}
+
+model SessionSummary {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  summary         String
+  nextStep        String?
+  createdByUserId String
+  updatedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("SessionSummaryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  updatedBy User?   @relation("SessionSummaryUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("session_summaries")
+}
+
+enum MentorshipStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ENDED
+}
+
+enum MentorshipGoalStatus {
+  ACTIVE
+  ACHIEVED
+  CANCELLED
+}
+
+model MentorshipRelationship {
+  id                  String           @id @default(cuid())
+  mentorProfileId     String
+  apprenticeProfileId String
+  primarySkillId      String
+  status              MentorshipStatus @default(ACTIVE)
+  startedAt           DateTime         @default(now())
+  pausedAt            DateTime?
+  completedAt         DateTime?
+  endedAt             DateTime?
+  endedByUserId       String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  mentorProfile     MentorProfile     @relation(fields: [mentorProfileId], references: [id], onDelete: Restrict)
+  apprenticeProfile ApprenticeProfile @relation(fields: [apprenticeProfileId], references: [id], onDelete: Restrict)
+  primarySkill      Skill             @relation(fields: [primarySkillId], references: [id], onDelete: Restrict)
+  endedBy           User?             @relation("MentorshipEndedBy", fields: [endedByUserId], references: [id], onDelete: SetNull)
+  goals             MentorshipGoal[]
+  bookings          Booking[]
+  reports           UserReport[]
+
+  @@index([mentorProfileId, status])
+  @@index([apprenticeProfileId, status])
+  @@index([mentorProfileId, apprenticeProfileId, primarySkillId, status])
+  @@map("mentorship_relationships")
+}
+
+enum UserReportReason {
+  HARASSMENT
+  INAPPROPRIATE_BEHAVIOR
+  SAFETY_CONCERN
+  SPAM
+  OTHER
+}
+
+enum UserReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum UserReportResolutionOutcome {
+  NO_ACTION
+  WARNING
+  USER_SUSPENDED
+  USER_DEACTIVATED
+  DISMISSED
+}
+
+model UserReport {
+  id                 String                         @id @default(cuid())
+  reporterUserId     String
+  reportedUserId     String
+  bookingId          String?
+  sessionId          String?
+  mentorshipId       String?
+  reason             UserReportReason
+  description        String
+  status             UserReportStatus               @default(OPEN)
+  createdAt          DateTime                       @default(now())
+  resolvedAt         DateTime?
+  resolutionOutcome  UserReportResolutionOutcome?
+  resolutionNote     String?
+  resolvedByUserId   String?
+
+  reporter   User                   @relation("ReportsSubmitted", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reported   User                   @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  resolvedBy User?                  @relation("ReportsResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  booking    Booking?               @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  session    Session?               @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  mentorship MentorshipRelationship? @relation(fields: [mentorshipId], references: [id], onDelete: SetNull)
+
+  @@index([reporterUserId, createdAt])
+  @@index([reportedUserId])
+  @@index([status])
+  @@map("user_reports")
+}
+
+enum NotificationType {
+  BOOKING_REQUESTED
+  BOOKING_ACCEPTED
+  BOOKING_DECLINED
+  BOOKING_CANCELLED
+  FEEDBACK_REQUESTED
+}
+
+enum NotificationChannel {
+  IN_APP
+}
+
+enum NotificationRelatedEntityType {
+  BOOKING
+  SESSION
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+model Notification {
+  id                String                        @id @default(cuid())
+  userId            String
+  type              NotificationType
+  channel           NotificationChannel           @default(IN_APP)
+  relatedEntityType NotificationRelatedEntityType
+  relatedEntityId   String
+  title             String
+  body              String
+  status            NotificationStatus            @default(UNREAD)
+  createdAt         DateTime                      @default(now())
+  readAt            DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+  @@map("notifications")
+}
+
+model MentorshipGoal {
+  id              String               @id @default(cuid())
+  relationshipId  String
+  title           String
+  description     String?
+  status          MentorshipGoalStatus @default(ACTIVE)
+  createdByUserId String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  completedAt     DateTime?
+
+  relationship MentorshipRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  createdBy    User                   @relation("MentorshipGoalCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([relationshipId, status])
+  @@map("mentorship_goals")
 }

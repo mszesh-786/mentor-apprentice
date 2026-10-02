@@ -7,15 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../../users/users.service';
 import { AuthUser } from '../../auth/auth-user';
-import { Role } from '@prisma/client';
-
-export type JwtPayload = {
-  sub: string;
-  email: string;
-  displayName?: string;
-  roles?: Role[];
-  emailVerified?: boolean;
-};
+import { isAuth0Mode } from '../../auth/auth-mode';
+import { verifyAccessToken } from '../../auth/token-verifier';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -40,23 +33,16 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    let payload: JwtPayload;
-    try {
-      payload = await this.jwtService.verifyAsync<JwtPayload>(token);
-    } catch {
-      throw new UnauthorizedException('Invalid token');
-    }
-
-    if (!payload.sub || !payload.email) {
-      throw new UnauthorizedException('Invalid token payload');
-    }
+    const payload = await verifyAccessToken(token, this.jwtService);
 
     const user = await this.usersService.ensureFromAuthProvider({
       authProviderId: payload.sub,
       email: payload.email,
       displayName: payload.displayName,
-      emailVerified: payload.emailVerified ?? false,
-      roles: payload.roles ?? [],
+      emailVerified: payload.emailVerified,
+      // Auth0 mode: roles live in DB only — never trust client/token roles.
+      roles: isAuth0Mode() ? [] : (payload.roles ?? []),
+      acceptClientRoles: !isAuth0Mode(),
     });
 
     request.user = user;

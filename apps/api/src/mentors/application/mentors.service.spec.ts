@@ -1,9 +1,21 @@
 import { BadRequestException } from '@nestjs/common';
-import { PublicationStatus, Role, UserStatus } from '@prisma/client';
+import {
+  CatalogueStatus,
+  ExpertiseStatus,
+  PublicationStatus,
+  Role,
+  TeachingLevel,
+  UserStatus,
+  VerificationStatus,
+} from '@prisma/client';
 import { MentorsService } from './mentors.service';
 import { MentorsRepository } from '../persistence/mentors.repository';
 import { UsersService } from '../../users/users.service';
 import { LanguagesService } from '../../languages/application/languages.service';
+import { SkillsService } from '../../skills/application/skills.service';
+import { VerificationService } from '../../verification/application/verification.service';
+import { AvailabilityService } from '../availability/application/availability.service';
+import { PublicationService } from '../publication/application/publication.service';
 import { AuthUser } from '../../auth/auth-user';
 import {
   ConflictError,
@@ -11,6 +23,7 @@ import {
   NotFoundError,
 } from '../../common/errors/domain-error';
 import { MentorProfile } from '../domain/mentor-profile';
+import { MentorExpertise } from '../domain/mentor-expertise';
 
 describe('MentorsService', () => {
   const activeMentor: AuthUser = {
@@ -21,6 +34,22 @@ describe('MentorsService', () => {
     displayName: 'David',
     status: UserStatus.ACTIVE,
     roles: [Role.MENTOR],
+  };
+
+  const skill = {
+    id: 'skill-1',
+    slug: 'basic-car-maintenance',
+    name: 'Basic Car Maintenance',
+    description: null,
+    status: CatalogueStatus.ACTIVE,
+    sortOrder: 1,
+    category: {
+      id: 'cat-1',
+      slug: 'automotive',
+      name: 'Automotive',
+      description: null,
+      sortOrder: 1,
+    },
   };
 
   const draftProfile: MentorProfile = {
@@ -35,18 +64,54 @@ describe('MentorsService', () => {
     currency: 'EUR',
     publicationStatus: PublicationStatus.DRAFT,
     languages: [],
+    expertise: [],
+    identityVerificationStatus: VerificationStatus.NOT_STARTED,
+    hasAvailability: false,
+    publicationEligibility: { eligible: false, requirements: [] },
+    isBookable: false,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+  };
+
+  const expertise: MentorExpertise = {
+    id: 'exp-1',
+    mentorProfileId: 'profile-1',
+    skillId: 'skill-1',
+    yearsExperience: 32,
+    description: 'Workshop mechanic',
+    teachingLevel: TeachingLevel.BEGINNER,
+    status: ExpertiseStatus.ACTIVE,
+    skill,
   };
 
   let mentorsRepository: jest.Mocked<
     Pick<
       MentorsRepository,
-      'findByUserId' | 'create' | 'update' | 'replaceLanguages'
+      | 'findByUserId'
+      | 'create'
+      | 'update'
+      | 'replaceLanguages'
+      | 'findExpertiseByMentorAndSkill'
+      | 'findExpertiseById'
+      | 'createExpertise'
+      | 'updateExpertise'
+      | 'deleteExpertise'
     >
   >;
-  let usersService: jest.Mocked<Pick<UsersService, 'updateDisplayName'>>;
+  let usersService: jest.Mocked<
+    Pick<UsersService, 'updateDisplayName' | 'findById'>
+  >;
   let languagesService: jest.Mocked<Pick<LanguagesService, 'assertActiveIds'>>;
+  let skillsService: jest.Mocked<Pick<SkillsService, 'assertActiveSkill'>>;
+  let verificationService: jest.Mocked<
+    Pick<VerificationService, 'getIdentityStatus'>
+  >;
+  let availabilityService: jest.Mocked<
+    Pick<AvailabilityService, 'hasActiveAvailability'>
+  >;
+  let publicationService: jest.Mocked<
+    Pick<PublicationService, 'buildProfilePublicationFields'>
+  >;
   let service: MentorsService;
 
   beforeEach(() => {
@@ -55,17 +120,52 @@ describe('MentorsService', () => {
       create: jest.fn(),
       update: jest.fn(),
       replaceLanguages: jest.fn(),
+      findExpertiseByMentorAndSkill: jest.fn(),
+      findExpertiseById: jest.fn(),
+      createExpertise: jest.fn(),
+      updateExpertise: jest.fn(),
+      deleteExpertise: jest.fn(),
     };
     usersService = {
       updateDisplayName: jest.fn(),
+      findById: jest.fn().mockResolvedValue({
+        id: 'user-1',
+        authProviderId: 'auth-1',
+        email: 'mentor@example.com',
+        emailVerified: true,
+        displayName: 'David',
+        status: UserStatus.ACTIVE,
+        roles: [Role.MENTOR],
+      }),
     };
     languagesService = {
       assertActiveIds: jest.fn(),
+    };
+    skillsService = {
+      assertActiveSkill: jest.fn(),
+    };
+    verificationService = {
+      getIdentityStatus: jest
+        .fn()
+        .mockResolvedValue(VerificationStatus.NOT_STARTED),
+    };
+    availabilityService = {
+      hasActiveAvailability: jest.fn().mockResolvedValue(false),
+    };
+    publicationService = {
+      buildProfilePublicationFields: jest.fn().mockReturnValue({
+        publicationEligibility: { eligible: false, requirements: [] },
+        isBookable: false,
+      }),
     };
     service = new MentorsService(
       mentorsRepository as unknown as MentorsRepository,
       usersService as unknown as UsersService,
       languagesService as unknown as LanguagesService,
+      skillsService as unknown as SkillsService,
+      verificationService as unknown as VerificationService,
+      availabilityService as unknown as AvailabilityService,
+      publicationService as unknown as PublicationService,
     );
   });
 
@@ -83,6 +183,10 @@ describe('MentorsService', () => {
     });
 
     expect(result.publicationStatus).toBe(PublicationStatus.DRAFT);
+    expect(result.identityVerificationStatus).toBe(
+      VerificationStatus.NOT_STARTED,
+    );
+    expect(result.hasAvailability).toBe(false);
     expect(mentorsRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-1', currency: 'EUR' }),
     );
@@ -119,6 +223,22 @@ describe('MentorsService', () => {
     await expect(service.getMyProfile(activeMentor)).resolves.toEqual(
       draftProfile,
     );
+  });
+
+  it('attaches identity verification status to own profile', async () => {
+    mentorsRepository.findByUserId.mockResolvedValue(draftProfile);
+    verificationService.getIdentityStatus.mockResolvedValue(
+      VerificationStatus.VERIFIED,
+    );
+    publicationService.buildProfilePublicationFields.mockReturnValue({
+      publicationEligibility: { eligible: true, requirements: [] },
+      isBookable: false,
+    });
+
+    const result = await service.getMyProfile(activeMentor);
+
+    expect(result.identityVerificationStatus).toBe(VerificationStatus.VERIFIED);
+    expect(result.publicationEligibility.eligible).toBe(true);
   });
 
   it('throws when profile is missing', async () => {
@@ -201,5 +321,115 @@ describe('MentorsService', () => {
     await expect(
       service.setMyLanguages(activeMentor, ['lang-en']),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('adds expertise for an active skill', async () => {
+    mentorsRepository.findByUserId
+      .mockResolvedValueOnce(draftProfile)
+      .mockResolvedValueOnce({ ...draftProfile, expertise: [expertise] });
+    skillsService.assertActiveSkill.mockResolvedValue(skill);
+    mentorsRepository.findExpertiseByMentorAndSkill.mockResolvedValue(null);
+
+    const result = await service.addExpertise(activeMentor, {
+      skillId: 'skill-1',
+      yearsExperience: 32,
+      description: 'Workshop mechanic',
+      teachingLevel: TeachingLevel.BEGINNER,
+    });
+
+    expect(mentorsRepository.createExpertise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mentorProfileId: 'profile-1',
+        skillId: 'skill-1',
+      }),
+    );
+    expect(result.expertise).toHaveLength(1);
+  });
+
+  it('rejects duplicate mentor+skill expertise', async () => {
+    mentorsRepository.findByUserId.mockResolvedValue(draftProfile);
+    skillsService.assertActiveSkill.mockResolvedValue(skill);
+    mentorsRepository.findExpertiseByMentorAndSkill.mockResolvedValue(
+      expertise,
+    );
+
+    await expect(
+      service.addExpertise(activeMentor, {
+        skillId: 'skill-1',
+        yearsExperience: 10,
+        teachingLevel: TeachingLevel.BEGINNER,
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('rejects expertise when skill is not active', async () => {
+    mentorsRepository.findByUserId.mockResolvedValue(draftProfile);
+    skillsService.assertActiveSkill.mockRejectedValue(
+      new BadRequestException('Skill is not available'),
+    );
+
+    await expect(
+      service.addExpertise(activeMentor, {
+        skillId: 'disabled-skill',
+        yearsExperience: 5,
+        teachingLevel: TeachingLevel.BEGINNER,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects expertise when mentor profile is missing', async () => {
+    mentorsRepository.findByUserId.mockResolvedValue(null);
+
+    await expect(
+      service.addExpertise(activeMentor, {
+        skillId: 'skill-1',
+        yearsExperience: 5,
+        teachingLevel: TeachingLevel.BEGINNER,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('updates own expertise', async () => {
+    mentorsRepository.findByUserId
+      .mockResolvedValueOnce(draftProfile)
+      .mockResolvedValueOnce({
+        ...draftProfile,
+        expertise: [{ ...expertise, yearsExperience: 40 }],
+      });
+    mentorsRepository.findExpertiseById.mockResolvedValue(expertise);
+
+    const result = await service.updateExpertise(activeMentor, 'exp-1', {
+      yearsExperience: 40,
+    });
+
+    expect(mentorsRepository.updateExpertise).toHaveBeenCalledWith(
+      'exp-1',
+      expect.objectContaining({ yearsExperience: 40 }),
+    );
+    expect(result.expertise[0]?.yearsExperience).toBe(40);
+  });
+
+  it('rejects update of another mentor expertise', async () => {
+    mentorsRepository.findByUserId.mockResolvedValue(draftProfile);
+    mentorsRepository.findExpertiseById.mockResolvedValue({
+      ...expertise,
+      mentorProfileId: 'other-profile',
+    });
+
+    await expect(
+      service.updateExpertise(activeMentor, 'exp-1', { yearsExperience: 1 }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+    expect(mentorsRepository.updateExpertise).not.toHaveBeenCalled();
+  });
+
+  it('removes own expertise', async () => {
+    mentorsRepository.findByUserId
+      .mockResolvedValueOnce(draftProfile)
+      .mockResolvedValueOnce(draftProfile);
+    mentorsRepository.findExpertiseById.mockResolvedValue(expertise);
+
+    await service.removeExpertise(activeMentor, 'exp-1');
+
+    expect(mentorsRepository.deleteExpertise).toHaveBeenCalledWith('exp-1');
   });
 });

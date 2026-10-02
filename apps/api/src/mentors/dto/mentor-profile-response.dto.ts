@@ -1,5 +1,7 @@
-import { PublicationStatus } from '@prisma/client';
+import { PublicationStatus, VerificationStatus } from '@prisma/client';
 import { LanguageResponseDto } from '../../languages/dto/language-response.dto';
+import { PublicationEligibilityResponseDto } from '../publication/dto/publication-eligibility-response.dto';
+import { MentorExpertiseResponseDto } from './mentor-expertise-response.dto';
 
 export class MentorProfileResponseDto {
   id!: string;
@@ -13,6 +15,11 @@ export class MentorProfileResponseDto {
   currency!: string | null;
   publicationStatus!: PublicationStatus;
   languages!: LanguageResponseDto[];
+  expertise!: MentorExpertiseResponseDto[];
+  identityVerification!: { status: VerificationStatus };
+  hasAvailability!: boolean;
+  publicationEligibility!: PublicationEligibilityResponseDto;
+  isBookable!: boolean;
   createdAt!: string;
   updatedAt!: string;
 }

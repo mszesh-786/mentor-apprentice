@@ -14,7 +14,8 @@
     "lint": "npm run lint -w web && npm run lint -w api",
     "lint:check": "npm run lint -w web && npm run lint:check -w api",
     "test": "npm run test -w api",
-    "test:e2e": "npm run test:e2e -w api"
+    "test:e2e": "npm run test:e2e -w api",
+    "test:e2e:web": "npm run test:e2e -w web"
   },
   "dependencies": {
     "jest": "^30.4.2"
