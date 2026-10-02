@@ -27,8 +27,12 @@ import { VerificationService } from '../../verification/application/verification
 import { Booking } from '../domain/booking';
 import { BookingsRepository } from '../persistence/bookings.repository';
 import { BookingsService } from './bookings.service';
+import { freezeDate } from '../../../test/freeze-date';
 
 describe('BookingsService', () => {
+  beforeAll(() => freezeDate());
+  afterAll(() => jest.useRealTimers());
+
   const apprentice: AuthUser = {
     id: 'apprentice-user',
     authProviderId: 'auth-a',
