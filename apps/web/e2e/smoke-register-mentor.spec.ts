@@ -12,8 +12,8 @@ test.describe('scaffold smoke', () => {
 
     await expect(page).toHaveURL(/\/mentor\/?$/)
     await expect(
-      page.getByRole('heading', { name: 'Mentor home' }),
+      page.getByRole('heading', { name: 'Welcome back, E2E Mentor' }),
     ).toBeVisible()
-    await expect(page.getByText(email)).toBeVisible()
+    await expect(page.getByText('Not bookable')).toBeVisible()
   })
 })
