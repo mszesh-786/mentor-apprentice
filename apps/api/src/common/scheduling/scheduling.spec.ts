@@ -1,5 +1,6 @@
 import { DayOfWeek } from '@prisma/client';
 import {
+  earliestSlotStart,
   fitsWeeklyAvailability,
   generateSlots,
   isAllowedDuration,
@@ -107,5 +108,14 @@ describe('scheduling', () => {
     });
 
     expect(slots).toEqual([]);
+  });
+
+  it('rounds the earliest slot start up to the next quarter hour', () => {
+    expect(
+      earliestSlotStart(new Date('2026-08-24T07:55:23.000Z')).toISOString(),
+    ).toBe('2026-08-24T08:00:00.000Z');
+    expect(
+      earliestSlotStart(new Date('2026-08-24T07:15:00.000Z')).toISOString(),
+    ).toBe('2026-08-24T07:15:00.000Z');
   });
 });
