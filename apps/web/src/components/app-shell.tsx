@@ -1,7 +1,24 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import {
+  Ban,
+  Bell,
+  ChevronDown,
+  CircleUser,
+  Flag,
+  LogOut,
+  MessageSquare,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -45,8 +62,7 @@ export function AppShell({
             </Link>
             <span className="text-sm text-muted-foreground">{title}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary">{session.displayName}</Badge>
+          <div className="flex items-center gap-2">
             {session.roles.length > 1 ? (
               <Select
                 value={session.activeRole}
@@ -72,16 +88,80 @@ export function AppShell({
             ) : (
               <Badge variant="outline">{roleLabel(session.activeRole)}</Badge>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                logout()
-                void navigate({ to: '/login' })
-              }}
-            >
-              Log out
-            </Button>
+            {!isAdmin ? (
+              <Button variant="ghost" size="sm" className="relative" asChild>
+                <Link
+                  to="/notifications"
+                  aria-label={
+                    unreadCount > 0
+                      ? `Notifications (${unreadCount} unread)`
+                      : 'Notifications'
+                  }
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 ? (
+                    <Badge
+                      variant="default"
+                      className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-[10px]"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                  ) : null}
+                </Link>
+              </Button>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" aria-label="Account menu">
+                  <CircleUser className="h-4 w-4" />
+                  <span className="max-w-[10rem] truncate">
+                    {session.displayName}
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>
+                  <div className="truncate">{session.displayName}</div>
+                  <div className="text-xs font-normal text-muted-foreground">
+                    {roleLabel(session.activeRole)}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {!isAdmin ? (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/feedback">
+                        <MessageSquare />
+                        Help us improve
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/blocks">
+                        <Ban />
+                        Blocked users
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/reports">
+                        <Flag />
+                        My reports
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
+                <DropdownMenuItem
+                  onSelect={() => {
+                    logout()
+                    void navigate({ to: '/login' })
+                  }}
+                >
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-3 px-4 pb-3 text-sm">
@@ -209,42 +289,6 @@ export function AppShell({
               </Link>
             </>
           )}
-          {!isAdmin ? (
-            <>
-              <Link
-                to="/feedback"
-                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
-              >
-                Help us improve
-              </Link>
-              <Link
-                to="/notifications"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                Notifications
-                {unreadCount > 0 ? (
-                  <Badge
-                    variant="default"
-                    className="h-5 min-w-5 px-1 text-[10px]"
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Badge>
-                ) : null}
-              </Link>
-              <Link
-                to="/blocks"
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Blocked
-              </Link>
-              <Link
-                to="/reports"
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                My reports
-              </Link>
-            </>
-          ) : null}
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
