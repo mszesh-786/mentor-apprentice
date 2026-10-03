@@ -1,12 +1,15 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { assertSafeAuthMode } from './auth/auth-mode';
+import { parseCorsOrigins } from './common/config/cors';
 import { DomainExceptionFilter } from './common/errors/domain-exception.filter';
 
 async function bootstrap() {
+  assertSafeAuthMode();
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    origin: parseCorsOrigins(process.env.CORS_ORIGIN),
   });
   app.useGlobalPipes(
     new ValidationPipe({

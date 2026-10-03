@@ -309,13 +309,72 @@ HTML report: `npm run test:e2e:report -w web`. Specs: smoke register + full happ
 SESSION_JOIN_OPEN_MINUTES_BEFORE=100000 SESSION_JOIN_CLOSE_MINUTES_AFTER_END=100000 npm run dev:api
 ```
 
-CI Playwright job still pending.
-
 ## CI / CD
 
-GitHub Actions:
+GitHub Actions (`.github/workflows/ci.yml`), on PR and push to `main`:
 
-- **CI** (`.github/workflows/ci.yml`) — on PR/push: API lint + unit + e2e (Postgres service) + build; web lint + build
-- **CD** (`.github/workflows/cd.yml`) — placeholder until deploy host chosen
+- **API** — lint, unit tests, migrations + seed against a Postgres service, API e2e, build
+- **Web** — lint, build
+- **Web E2E** — Postgres service, built API in stub mode, Playwright Chromium; report uploaded as an artifact on failure
 
-After pushing to GitHub, open the Actions tab to see CI runs.
+Deploys come from the hosts' git integrations (no CD workflow):
+
+```
+main ─┬─► Vercel  → apps/web  (React SPA)
+      └─► Render  → apps/api  (NestJS) ─► Neon Postgres
+```
+
+## Staging deploy
+
+### Neon
+
+Create a project and copy both connection strings:
+
+- `DATABASE_URL` — **pooled** (host contains `-pooler`), append `&pgbouncer=true&connect_timeout=15`
+- `DIRECT_URL` — **direct** (non-pooled); Prisma uses it for migrations
+
+### Auth0 (staging application)
+
+Single Page Application, with an API whose identifier becomes the audience. Set the
+application URLs to the Vercel domain:
+
+- Allowed Callback URLs: `https://<vercel-domain>/auth/callback`
+- Allowed Logout URLs / Allowed Web Origins: `https://<vercel-domain>`
+
+### Render (API)
+
+New → Blueprint → this repo; `render.yaml` defines the service. Fill the prompted values:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | Neon pooled URL |
+| `DIRECT_URL` | Neon direct URL |
+| `CORS_ORIGIN` | `https://<vercel-domain>` (comma-separate extras, e.g. preview domains) |
+| `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` | from Auth0 |
+
+The start command runs `prisma migrate deploy` before booting. The API refuses to start
+with stub auth when `NODE_ENV=production` (override with `ALLOW_STUB_AUTH=true` only for
+private environments). Free instances sleep when idle; the first request takes ~30–60s.
+
+### Vercel (web)
+
+Import the repo, set **Root Directory** to `apps/web` (`vercel.json` handles SPA rewrites).
+Environment variables (build-time):
+
+| Variable | Value |
+| --- | --- |
+| `VITE_API_URL` | `https://<render-service>.onrender.com` |
+| `VITE_AUTH_MODE` | `auth0` |
+| `VITE_AUTH0_DOMAIN` / `VITE_AUTH0_CLIENT_ID` / `VITE_AUTH0_AUDIENCE` | from Auth0 |
+
+Never set `VITE_JWT_SECRET` on Vercel — it would ship the signing secret to browsers.
+
+### Demo data
+
+After the first successful deploy, seed Neon from your machine (uses the direct URL):
+
+```bash
+cd apps/api
+DATABASE_URL="<neon-direct-url>" DIRECT_URL="<neon-direct-url>" npm run prisma:seed
+DATABASE_URL="<neon-direct-url>" DIRECT_URL="<neon-direct-url>" npm run seed:demo
+```
