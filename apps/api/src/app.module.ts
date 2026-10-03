@@ -15,12 +15,14 @@ import { BookingsModule } from './bookings/bookings.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { MentorshipsModule } from './mentorships/mentorships.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
     DatabaseModule,
+    HealthModule,
     AuthModule,
     UsersModule,
     LanguagesModule,

@@ -1,0 +1,45 @@
+# Render Blueprint — NestJS API (staging). Database lives on Neon, not Render.
+# Values marked `sync: false` are prompted for in the Render dashboard on first apply.
+services:
+  - type: web
+    name: mentor-apprentice-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - apps/api/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    # NODE_ENV=production also applies at build time, so dev deps must be forced in.
+    buildCommand: npm ci --include=dev && npm run prisma:generate -w api && npm run build -w api
+    startCommand: npm run start:release -w api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_MODE
+        value: auth0
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: AUTH0_DOMAIN
+        sync: false
+      - key: AUTH0_AUDIENCE
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOW_VERIFICATION_STUB
+        value: "true"
+      - key: SESSION_JOIN_OPEN_MINUTES_BEFORE
+        value: "15"
+      - key: SESSION_JOIN_CLOSE_MINUTES_AFTER_END
+        value: "30"

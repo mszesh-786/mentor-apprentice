@@ -31,6 +31,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://mentor:mentor@localhost:5432/mentor_apprentice?schema=public
+      DIRECT_URL: postgresql://mentor:mentor@localhost:5432/mentor_apprentice?schema=public
       JWT_SECRET: ci-jwt-secret
       NODE_ENV: test
 
@@ -89,3 +90,85 @@ jobs:
 
       - name: Build web
         run: npm run build -w web
+
+  web-e2e:
+    name: Web E2E (Playwright, Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mentor
+          POSTGRES_PASSWORD: mentor
+          POSTGRES_DB: mentor_apprentice
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mentor -d mentor_apprentice"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://mentor:mentor@localhost:5432/mentor_apprentice?schema=public
+      DIRECT_URL: postgresql://mentor:mentor@localhost:5432/mentor_apprentice?schema=public
+      JWT_SECRET: ci-jwt-secret
+      VITE_JWT_SECRET: ci-jwt-secret
+      AUTH_MODE: stub
+      CORS_ORIGIN: http://localhost:5173
+      ALLOW_VERIFICATION_STUB: "true"
+      # The happy-path spec joins a session booked minutes earlier; keep the join window wide.
+      SESSION_JOIN_OPEN_MINUTES_BEFORE: "100000"
+      SESSION_JOIN_CLOSE_MINUTES_AFTER_END: "100000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare database
+        working-directory: apps/api
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run prisma:seed
+
+      - name: Build API
+        run: npm run build -w api
+
+      - name: Start API
+        working-directory: apps/api
+        run: |
+          nohup node dist/main > ../../api.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/health && exit 0
+            sleep 1
+          done
+          cat ../../api.log
+          exit 1
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - name: Playwright tests
+        run: npm run test:e2e -w web
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+            api.log
+          retention-days: 7

@@ -24,6 +24,7 @@ import {
   NotFoundError,
 } from '../../common/errors/domain-error';
 import {
+  earliestSlotStart,
   fitsWeeklyAvailability,
   generateSlots,
   getZonedParts,
@@ -361,14 +362,19 @@ export class BookingsService {
     }
     await this.assertBookableMentor(viewer.id, mentor.userId, mentor);
 
-    const from = new Date(input.from);
+    const requestedFrom = new Date(input.from);
     const to = new Date(input.to);
     if (
-      Number.isNaN(from.getTime()) ||
+      Number.isNaN(requestedFrom.getTime()) ||
       Number.isNaN(to.getTime()) ||
-      from >= to
+      requestedFrom >= to
     ) {
       throw new BadRequestException('Invalid from/to range');
+    }
+    const earliest = earliestSlotStart(new Date());
+    const from = requestedFrom < earliest ? earliest : requestedFrom;
+    if (from >= to) {
+      return [];
     }
 
     const timezone = mentor.timezone ?? 'UTC';

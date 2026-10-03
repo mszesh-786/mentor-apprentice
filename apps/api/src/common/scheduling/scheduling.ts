@@ -126,6 +126,14 @@ export function isBlockedByException(
   });
 }
 
+const SLOT_STEP_MINUTES = 15;
+
+/** Next slot-grid boundary at or after `now`; slots must never start in the past. */
+export function earliestSlotStart(now: Date): Date {
+  const stepMs = SLOT_STEP_MINUTES * 60_000;
+  return new Date(Math.ceil(now.getTime() / stepMs) * stepMs);
+}
+
 export function generateSlots(input: {
   from: Date;
   to: Date;
@@ -154,7 +162,7 @@ export function generateSlots(input: {
         endAt: end.toISOString(),
       });
     }
-    cursor.setUTCMinutes(cursor.getUTCMinutes() + 15);
+    cursor.setUTCMinutes(cursor.getUTCMinutes() + SLOT_STEP_MINUTES);
   }
 
   return slots;
